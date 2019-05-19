@@ -12,6 +12,7 @@ class SpriteEditor : public EditorWindow<SpriteEditor>
 public:
 	virtual ~SpriteEditor(void);
 
+	virtual void Create(void) override {}
 	virtual void Process(void) override;
 	virtual void SetVisible(bool isVisible) override;
 

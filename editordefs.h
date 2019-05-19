@@ -8,5 +8,6 @@
 // -------------------------------------------------------------------------------------------------
 
 class Editor;
+class MenuBar;
 class SpriteEditor;
 class SpriteSelector;

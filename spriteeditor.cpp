@@ -111,9 +111,7 @@ void SpriteEditor::CreateEditorWindow(void)
 	);
 
 	// Texture background panel.
-	widget_t *background = GetEditor()->CreatePanel(m_window);
-
-	widget_set_anchors(background,
+	widget_t *background = GetEditor()->CreatePanel(m_window,
 		ANCHOR_MIN, 5,
 		ANCHOR_MAX, -5,
 		ANCHOR_MIN, 35,
@@ -134,9 +132,7 @@ void SpriteEditor::CreateEditorWindow(void)
 	widget_set_input_handler(m_texturePanel, OnInputEvent);
 
 	// Background panel for parameters.
-	m_paramsPanel = GetEditor()->CreatePanel(background);
-
-	widget_set_anchors(m_paramsPanel,
+	m_paramsPanel = GetEditor()->CreatePanel(background,
 		ANCHOR_MAX, -200,
 		ANCHOR_MAX, 0,
 		ANCHOR_MAX, -210,

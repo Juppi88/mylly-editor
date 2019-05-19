@@ -1,4 +1,5 @@
 #include "editor.h"
+#include "menubar.h"
 #include "spriteeditor.h"
 #include "spriteselector.h"
 #include <mylly/math/matrix.h>
@@ -10,21 +11,32 @@
 
 Editor::Editor(void)
 {
-	// Create editor window instances.
-	m_spriteSelector = SpriteSelector::Instance(this);
-	m_spriteEditor = SpriteEditor::Instance(this);
-
-	// Display widgets for testing.
-	m_spriteSelector->SetVisible(true);
-	m_spriteEditor->SetVisible(true);
-
-	m_spriteEditor->SetSpriteSheet(res_get_texture("ui-white"));
+	m_menuBar = new MenuBar(this);
 }
 
 Editor::~Editor(void)
 {
 	delete m_spriteEditor;
 	delete m_spriteSelector;
+	delete m_menuBar;
+}
+
+void Editor::Create(void)
+{
+	// Create the menu bar.
+	m_menuBar->Create();
+
+	// Create editor window instances.
+	m_spriteSelector = SpriteSelector::Instance(this);
+	m_spriteEditor = SpriteEditor::Instance(this);
+
+	// Display widgets for testing.
+	// TODO: Remove!
+	m_spriteSelector->SetVisible(true);
+	m_spriteEditor->SetVisible(true);
+	m_menuBar->SetVisible(true);
+
+	m_spriteEditor->SetSpriteSheet(res_get_texture("ui-white"));
 }
 
 void Editor::Process(void)
@@ -70,11 +82,19 @@ bool Editor::WasDoubleClicked(mouse_button_t button)
 	return doubleClicked;
 }
 
-widget_t *Editor::CreatePanel(widget_t *parent)
+widget_t *Editor::CreatePanel(widget_t *parent,
+	                          anchor_type_t left_type, int16_t left_offset,
+	                          anchor_type_t right_type, int16_t right_offset,
+	                          anchor_type_t top_type, int16_t top_offset,
+	                          anchor_type_t bottom_type, int16_t bottom_offset)
 {
 	widget_t *panel = panel_create(parent);
-	widget_set_sprite(panel, res_get_sprite("ui-white/button01"));
-	widget_set_colour(panel, col(220, 220, 220));
+	widget_set_sprite(panel, res_get_sprite("ui-white/background_white"));
+	widget_set_colour(panel, col_a(20, 20, 20, 200));
+
+	widget_set_anchors(panel,
+	                   left_type, left_offset, right_type, right_offset,
+	                   top_type, top_offset, bottom_type, bottom_offset);
 
 	return panel;
 }
@@ -82,7 +102,9 @@ widget_t *Editor::CreatePanel(widget_t *parent)
 widget_t *Editor::CreateWindow(const vec2i_t &position, const vec2i_t &size,
                                widget_t *&outCloseButton)
 {
-	widget_t *panel = CreatePanel(nullptr);
+	widget_t *panel = panel_create(nullptr);
+	widget_set_sprite(panel, res_get_sprite("ui-white/button01"));
+	widget_set_colour(panel, col(220, 220, 220));
 
 	widget_set_position(panel, position);
 	widget_set_size(panel, size);
@@ -113,9 +135,9 @@ widget_t *Editor::CreateButton(widget_t *parent, const char *text,
 	widget_t *button = button_create(parent);
 
 	widget_set_sprite(button, res_get_sprite("ui-white/button02"));
-	button_set_colours(button, col(120, 200, 80), col(180, 255, 150), col(100, 190, 70));
-	widget_set_text_font(button, res_get_font("ConnectionII", 20));
-	widget_set_text_colour(button, COL_BLACK);
+	button_set_colours(button, col(35, 35, 35), col(50, 50, 50), col(20, 20, 20));
+	widget_set_text_font(button, res_get_font("Louis George Cafe", 14));
+	widget_set_text_colour(button, COL_WHITE);
 	widget_set_text_s(button, text);
 
 	widget_set_anchors(button,

@@ -11,6 +11,7 @@ class SpriteSelector : public EditorWindow<SpriteSelector>
 public:
 	virtual ~SpriteSelector(void);
 
+	virtual void Create(void) override {}
 	virtual void Process(void) override {}
 	virtual void SetVisible(bool isVisible) override;
 

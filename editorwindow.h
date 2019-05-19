@@ -22,6 +22,8 @@ public:
 	}
 
 	virtual ~EditorWindow(void) {}
+
+	virtual void Create(void) = 0;
 	virtual void Process(void) = 0;
 
 	bool IsVisible(void) const { return m_isVisible; }

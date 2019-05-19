@@ -83,9 +83,7 @@ void SpriteSelector::CreateEditorWindow(void)
 	);
 
 	// Selection grid and background panel.
-	widget_t *selectionPanel = GetEditor()->CreatePanel(m_window);
-
-	widget_set_anchors(selectionPanel,
+	widget_t *selectionPanel = GetEditor()->CreatePanel(m_window,
 		ANCHOR_MIN, 5,
 		ANCHOR_MAX, -5,
 		ANCHOR_MIN, 35,
