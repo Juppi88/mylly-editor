@@ -10,27 +10,52 @@
 SpriteSelector::SpriteSelector(Editor *editor)
 	: EditorWindow(editor)
 {
-	m_selectedCallback = nullptr;
-
-	// Create UI widgets.
-	CreateEditorWindow();
-
-	// Hide the widgets until needed.
-	SetVisible(false);
 }
 
 SpriteSelector::~SpriteSelector(void)
 {
-	// Destroy the widgets and all its children recursively.
-	widget_destroy(m_window);
 }
 
-void SpriteSelector::SetVisible(bool isVisible)
+void SpriteSelector::Create(void)
 {
-	EditorWindow::SetVisible(isVisible);
+	// Window panel and close button.
+	widget_t *closeButton;
+	widget_t *panel = GetEditor()->CreateWindow(vec2i(700, 200), vec2i(600, 400), closeButton);
 
-	// Toggle UI widget visibility.
-	widget_set_visible(m_window, IsVisible());
+	SetPanel(panel);
+
+	widget_set_user_context(closeButton, this);
+	button_set_clicked_handler(closeButton, OnClickClose);
+
+	// Selection grid title label.
+	m_gridTitle = GetEditor()->CreateLabel(panel, "",
+		ANCHOR_MIN, 40,
+		ANCHOR_MAX, -40,
+		ANCHOR_MIN, 0,
+		ANCHOR_MIN, 30
+	);
+
+	// Selection grid and background panel.
+	widget_t *selectionPanel = GetEditor()->CreatePanel(panel,
+		ANCHOR_MIN, 5,
+		ANCHOR_MAX, -5,
+		ANCHOR_MIN, 35,
+		ANCHOR_MAX, -5
+	);
+
+	m_grid = grid_create(selectionPanel);
+	grid_set_margin(m_grid, vec2i(10, 10));
+	grid_set_item_size(m_grid, vec2i(48, 48));
+
+	widget_set_anchors(m_grid,
+		ANCHOR_MIN, 0,
+		ANCHOR_MAX, 0,
+		ANCHOR_MIN, 0,
+		ANCHOR_MAX, 0
+	);
+
+	// Hide the widgets until needed.
+	SetVisible(false);
 }
 
 void SpriteSelector::Select(const char *title, OnSelected_t callback)
@@ -64,42 +89,6 @@ void SpriteSelector::AddOption(sprite_t *icon, void *context)
 
 	// Flag the grid for repositioning.
 	grid_reposition(m_grid);
-}
-
-void SpriteSelector::CreateEditorWindow(void)
-{
-	// Window panel and close button.
-	widget_t *closeButton;
-	m_window = GetEditor()->CreateWindow(vec2i(700, 200), vec2i(600, 400), closeButton);
-	widget_set_user_context(closeButton, this);
-	button_set_clicked_handler(closeButton, OnClickClose);
-
-	// Selection grid title label.
-	m_gridTitle = GetEditor()->CreateLabel(m_window, "",
-		ANCHOR_MIN, 40,
-		ANCHOR_MAX, -40,
-		ANCHOR_MIN, 0,
-		ANCHOR_MIN, 30
-	);
-
-	// Selection grid and background panel.
-	widget_t *selectionPanel = GetEditor()->CreatePanel(m_window,
-		ANCHOR_MIN, 5,
-		ANCHOR_MAX, -5,
-		ANCHOR_MIN, 35,
-		ANCHOR_MAX, -5
-	);
-
-	m_grid = grid_create(selectionPanel);
-	grid_set_margin(m_grid, vec2i(10, 10));
-	grid_set_item_size(m_grid, vec2i(48, 48));
-
-	widget_set_anchors(m_grid,
-		ANCHOR_MIN, 0,
-		ANCHOR_MAX, 0,
-		ANCHOR_MIN, 0,
-		ANCHOR_MAX, 0
-	);
 }
 
 void SpriteSelector::OnClickClose(widget_t *widget)

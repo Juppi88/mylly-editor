@@ -20,15 +20,22 @@ public:
 	scene_t *GetScene(void) const { return m_currentScene; }
 	camera_t *GetCamera(void) const { return scene_get_main_camera(m_currentScene); }
 
+	MenuBar *GetMenuBar(void) const { return m_menuBar; }
+	SideBar *GetSideBar(void) const { return m_sideBar; }
 	SpriteEditor *GetSpriteEditor(void) const { return m_spriteEditor; }
 	SpriteSelector *GetSpriteSelector(void) const { return m_spriteSelector; }
+
+	bool IsVisible(void) const { return m_isVisible; }
+	void SetVisible(bool isVisible);
 
 	vec2_t GetCursorPosition(void) const;
 	vec2_t GetCursorWorldPosition(void) const;
 
 	bool WasDoubleClicked(mouse_button_t button);
 
+	//
 	// Methods for creating similarly looking widgets.
+	//
 	widget_t *CreatePanel(widget_t *parent,
 	                       anchor_type_t left_type, int16_t left_offset,
 	                       anchor_type_t right_type, int16_t right_offset,
@@ -62,16 +69,21 @@ public:
 	                         anchor_type_t bottom_type, int16_t bottom_offset);
 
 private:
+	static void OnCloseButtonClicked(widget_t *closeButton);
+
+private:
 	static constexpr float DOUBLE_CLICK_INTERVAL = 0.25f;
 
-	mouse_button_t m_lastMouseButton;
-	float m_lastMouseClickTime;
+	mouse_button_t m_lastMouseButton = MOUSE_NONE;
+	float m_lastMouseClickTime = 0;
 
 	scene_t *m_currentScene = nullptr;
 
-	// Editor windows
-	SpriteEditor *m_spriteEditor;
-	SpriteSelector *m_spriteSelector;
+	bool m_isVisible = false;
 
+	// Editor windows
 	MenuBar *m_menuBar = nullptr;
+	SideBar *m_sideBar = nullptr;
+	SpriteEditor *m_spriteEditor = nullptr;
+	SpriteSelector *m_spriteSelector = nullptr;
 };

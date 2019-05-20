@@ -7,21 +7,19 @@
 
 class SpriteEditor : public EditorWindow<SpriteEditor>
 {
-	friend class EditorWindow;
-
 public:
 	virtual ~SpriteEditor(void);
 
-	virtual void Create(void) override {}
+	virtual void Create(void) override;
 	virtual void Process(void) override;
 	virtual void SetVisible(bool isVisible) override;
 
 	void SetSpriteSheet(texture_t *spriteSheet);
 	
 private:
+	friend class EditorWindow;
 	SpriteEditor(Editor *editor);
 
-	void CreateEditorWindow(void);
 	void UpdateView(void);
 
 	void CreateNewSpriteAtCursorPosition(void);
@@ -62,7 +60,6 @@ private:
 
 	sprite_t *m_selectedSprite = nullptr;
 
-	widget_t *m_window = nullptr;
 	widget_t *m_title = nullptr;
 	widget_t *m_texturePanel = nullptr;
 

@@ -21,19 +21,33 @@ public:
 		return m_instance;
 	}
 
-	virtual ~EditorWindow(void) {}
-
 	virtual void Create(void) = 0;
 	virtual void Process(void) = 0;
 
 	bool IsVisible(void) const { return m_isVisible; }
-	virtual void SetVisible(bool isVisible) { m_isVisible = isVisible; }
+
+	virtual void SetVisible(bool isVisible)
+	{
+		m_isVisible = isVisible;
+		widget_set_visible(m_panel, isVisible);
+	}
+
+	widget_t *GetPanel(void) const { return m_panel; }
 
 protected:
-	EditorWindow(Editor *editor) : m_editor(editor), m_isVisible(true) {}
+	virtual ~EditorWindow(void)
+	{
+		// Destroy the main widget. This will destroy all child widgets recursivecly.
+		widget_destroy(m_panel);
+	}
+
+	EditorWindow(Editor *editor) : m_editor(editor) {}
 	Editor *GetEditor(void) const { return m_editor; }
 
+	void SetPanel(widget_t *panel) { m_panel = panel; }
+
 private:
-	Editor *m_editor;
-	bool m_isVisible;
+	Editor *m_editor = nullptr;
+	bool m_isVisible = true;
+	widget_t *m_panel = nullptr;
 };

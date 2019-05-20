@@ -12,14 +12,11 @@ MenuBar::MenuBar(Editor *editor) :
 
 MenuBar::~MenuBar(void)
 {
-	// Destroy the main widget. This will destroy all child widgets recursivecly.
-	widget_destroy(m_menuBar);
 }
-
 
 void MenuBar::Create(void)
 {
-	m_menuBar = GetEditor()->CreatePanel(
+	widget_t *panel = GetEditor()->CreatePanel(
 		nullptr,
 		ANCHOR_MIN, 0,
 		ANCHOR_MAX, 0,
@@ -27,33 +24,22 @@ void MenuBar::Create(void)
 		ANCHOR_MIN, 40
 	);
 
+	SetPanel(panel);
+
 	// Hide the menu bar until needed.
 	SetVisible(false);
-
-	// TESTING: Add some buttons for testing
-	AddButton("Sprite Editor");
-	AddButton("Particle Editor");
-	AddButton("Close");
 }
 
 void MenuBar::Process(void)
 {
 }
 
-void MenuBar::SetVisible(bool isVisible)
-{
-	EditorWindow::SetVisible(isVisible);
-
-	// Toggle main widget visibility.
-	widget_set_visible(m_menuBar, IsVisible());
-}
-
-void MenuBar::AddButton(const char *text)
+void MenuBar::AddButton(const char *text, OnClickButton_t callback, void *context)
 {
 	// Use a dummy width until we know the width of the text.
 	uint32_t buttonWidth = 100;
 
-	widget_t *button = GetEditor()->CreateButton(m_menuBar, text,
+	widget_t *button = GetEditor()->CreateButton(GetPanel(), text,
 		ANCHOR_MIN, m_nextButtonPositionX,
 		ANCHOR_MIN, m_nextButtonPositionX + buttonWidth,
 		ANCHOR_MIN, 5,
@@ -71,4 +57,8 @@ void MenuBar::AddButton(const char *text)
 	);
 
 	m_nextButtonPositionX += buttonWidth + BUTTON_MARGIN;
+
+	// Add a callback for clicking the button.
+	button_set_clicked_handler(button, callback);
+	widget_set_user_context(button, context);
 }

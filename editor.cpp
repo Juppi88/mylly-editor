@@ -1,5 +1,6 @@
 #include "editor.h"
 #include "menubar.h"
+#include "sidebar.h"
 #include "spriteeditor.h"
 #include "spriteselector.h"
 #include <mylly/math/matrix.h>
@@ -11,30 +12,31 @@
 
 Editor::Editor(void)
 {
-	m_menuBar = new MenuBar(this);
+	// Create editor window instances.
+	m_menuBar = MenuBar::Instance(this);
+	m_sideBar = SideBar::Instance(this);
+	m_spriteSelector = SpriteSelector::Instance(this);
+	m_spriteEditor = SpriteEditor::Instance(this);
 }
 
 Editor::~Editor(void)
 {
 	delete m_spriteEditor;
 	delete m_spriteSelector;
+	delete m_sideBar;
 	delete m_menuBar;
 }
 
 void Editor::Create(void)
 {
-	// Create the menu bar.
+	// Create the menu and side bars.
 	m_menuBar->Create();
+	m_sideBar->Create();
+	m_spriteSelector->Create();
+	m_spriteEditor->Create();
 
-	// Create editor window instances.
-	m_spriteSelector = SpriteSelector::Instance(this);
-	m_spriteEditor = SpriteEditor::Instance(this);
-
-	// Display widgets for testing.
-	// TODO: Remove!
-	m_spriteSelector->SetVisible(true);
-	m_spriteEditor->SetVisible(true);
-	m_menuBar->SetVisible(true);
+	// Add a close button to the menubar.
+	m_menuBar->AddButton("Close", OnCloseButtonClicked);
 
 	m_spriteEditor->SetSpriteSheet(res_get_texture("ui-white"));
 }
@@ -44,6 +46,14 @@ void Editor::Process(void)
 	if (m_spriteEditor->IsVisible()) {
 		m_spriteEditor->Process();
 	}
+}
+
+void Editor::SetVisible(bool isVisible)
+{
+	m_isVisible = isVisible;
+	
+	m_menuBar->SetVisible(isVisible);
+	m_sideBar->SetVisible(isVisible);
 }
 
 vec2_t Editor::GetCursorPosition(void) const
@@ -207,4 +217,12 @@ widget_t *Editor::CreateInputBox(widget_t *parent,
 	inputbox_set_cursor_sprite(input, res_get_sprite("ui-white/textbox_cursor_02"), 2);
 
 	return input;
+}
+
+void Editor::OnCloseButtonClicked(widget_t *closeButton)
+{
+	UNUSED(closeButton);
+
+	MenuBar::Instance()->SetVisible(false);
+	SideBar::Instance()->SetVisible(false);
 }

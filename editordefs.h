@@ -9,5 +9,6 @@
 
 class Editor;
 class MenuBar;
+class SideBar;
 class SpriteEditor;
 class SpriteSelector;

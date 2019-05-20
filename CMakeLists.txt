@@ -28,7 +28,8 @@ file(GLOB EDITOR_SRC
 # Create a static library from the editor source.
 add_library(mylly_editor ${EDITOR_SRC})
 
+# TODO: Figure out how to safely remove the relative paths!
 target_include_directories(mylly_editor
 	PUBLIC	${CMAKE_CURRENT_SOURCE_DIR}
-	PRIVATE	${MYLLY_INCLUDE_DIRS}
+	PRIVATE	${MYLLY_INCLUDE_DIRS} ../mylly ../mylly/mylly
 )

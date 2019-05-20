@@ -20,90 +20,25 @@ SpriteEditor::SpriteEditor(Editor *editor)
 	: EditorWindow(editor)
 {
 	m_viewOffset = vec2(-VIEW_MARGIN, -VIEW_MARGIN);
-
-	// Create UI widgets.
-	CreateEditorWindow();
-
-	// Hide the widgets until needed.
-	SetVisible(false);
 }
 
 SpriteEditor::~SpriteEditor(void)
 {
-	// Destroy the widgets and all its children recursively.
-	widget_destroy(m_window);
 }
 
-void SpriteEditor::Process(void)
-{
-	if (m_isViewDirty &&
-		m_texturePanel->mesh != nullptr) {
-
-		UpdateView();
-		m_isViewDirty = false;
-	}
-
-	// Draw sprite boundaries for all visible sprites.
-	sprite_t *sprite;
-
-	arr_foreach(m_spriteSheet->sprites, sprite) {
-
-		vec2_t min, max;
-
-		if (GetSpriteRectInPanel(sprite, min, max)) {
-
-			vec3_t centre = vec3((min.x + max.x) / 2, (min.y + max.y) / 2, 0);
-			vec2_t extents = vec2((max.x - min.x) / 2, (max.y - min.y) / 2);
-
-			debug_draw_rect(
-				centre,
-				extents,
-				sprite == m_selectedSprite ? COL_SELECTED_SPRITE : COL_SPRITE,
-				true
-			);
-		}
-	}
-}
-
-void SpriteEditor::SetVisible(bool isVisible)
-{
-	EditorWindow::SetVisible(isVisible);
-
-	// Toggle UI widget visibility.
-	widget_set_visible(m_window, IsVisible());
-
-	// Unselect previously selected sprite in case it no longer exists or is part of another sheet.
-	if (isVisible) {
-		SelectSprite(nullptr);
-	}
-}
-
-void SpriteEditor::SetSpriteSheet(texture_t *spriteSheet)
-{
-	if (spriteSheet == nullptr) {
-		return;
-	}
-
-	m_spriteSheet = spriteSheet;
-
-	// Get the sprite consisting of the entire texture.
-	widget_set_sprite(m_texturePanel, res_get_sprite(m_spriteSheet->resource.res_name));
-	m_isViewDirty = true;
-
-	// Update window title.
-	widget_set_text(m_title, "Sprite Editor - %s", m_spriteSheet->resource.path);
-}
-
-void SpriteEditor::CreateEditorWindow(void)
+void SpriteEditor::Create(void)
 {
 	// Window panel and close button.
 	widget_t *closeButton;
-	m_window = GetEditor()->CreateWindow(vec2i(550, 250), vec2i(1600, 1000), closeButton);
+	widget_t *panel = GetEditor()->CreateWindow(vec2i(550, 250), vec2i(1600, 1000), closeButton);
+
+	SetPanel(panel);
+
 	widget_set_user_context(closeButton, this);
 	button_set_clicked_handler(closeButton, OnClickClose);
 
 	// Title label.
-	m_title = GetEditor()->CreateLabel(m_window, "",
+	m_title = GetEditor()->CreateLabel(panel, "",
 		ANCHOR_MIN, 40,
 		ANCHOR_MAX, -40,
 		ANCHOR_MIN, 0,
@@ -111,7 +46,7 @@ void SpriteEditor::CreateEditorWindow(void)
 	);
 
 	// Texture background panel.
-	widget_t *background = GetEditor()->CreatePanel(m_window,
+	widget_t *background = GetEditor()->CreatePanel(panel,
 		ANCHOR_MIN, 5,
 		ANCHOR_MAX, -5,
 		ANCHOR_MIN, 35,
@@ -244,6 +179,66 @@ void SpriteEditor::CreateEditorWindow(void)
 
 	// Hide the sprite paramerers panel until a sprite is selected.
 	widget_set_visible(m_paramsPanel, false);
+
+	// Hide everything else as well.
+	SetVisible(false);
+}
+
+void SpriteEditor::Process(void)
+{
+	if (m_isViewDirty &&
+		m_texturePanel->mesh != nullptr) {
+
+		UpdateView();
+		m_isViewDirty = false;
+	}
+
+	// Draw sprite boundaries for all visible sprites.
+	sprite_t *sprite;
+
+	arr_foreach(m_spriteSheet->sprites, sprite) {
+
+		vec2_t min, max;
+
+		if (GetSpriteRectInPanel(sprite, min, max)) {
+
+			vec3_t centre = vec3((min.x + max.x) / 2, (min.y + max.y) / 2, 0);
+			vec2_t extents = vec2((max.x - min.x) / 2, (max.y - min.y) / 2);
+
+			debug_draw_rect(
+				centre,
+				extents,
+				sprite == m_selectedSprite ? COL_SELECTED_SPRITE : COL_SPRITE,
+				true
+			);
+		}
+	}
+}
+
+void SpriteEditor::SetVisible(bool isVisible)
+{
+	EditorWindow::SetVisible(isVisible);
+
+	// Unselect previously selected sprite in case it no longer exists or is part of another sheet.
+	if (isVisible) {
+		SelectSprite(nullptr);
+	}
+}
+
+void SpriteEditor::SetSpriteSheet(texture_t *spriteSheet)
+{
+	if (spriteSheet == nullptr) {
+		return;
+	}
+
+	m_spriteSheet = spriteSheet;
+
+	// Get the sprite consisting of the entire texture.
+	widget_set_sprite(m_texturePanel, res_get_sprite(m_spriteSheet->resource.res_name));
+	m_isViewDirty = true;
+
+	// Update window title.
+	widget_set_text(m_title, "Sprite Editor - %s", m_spriteSheet->resource.path);
 }
 
 void SpriteEditor::UpdateView(void)

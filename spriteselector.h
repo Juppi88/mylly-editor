@@ -6,20 +6,18 @@
 
 class SpriteSelector : public EditorWindow<SpriteSelector>
 {
-	friend class EditorWindow;
-
 public:
 	virtual ~SpriteSelector(void);
 
-	virtual void Create(void) override {}
+	virtual void Create(void) override;
 	virtual void Process(void) override {}
-	virtual void SetVisible(bool isVisible) override;
 
 	typedef void (*OnSelected_t)(void *context);
 	void Select(const char *title, OnSelected_t callback);
 	void AddOption(sprite_t *icon, void *context);
 	
 private:
+	friend class EditorWindow;
 	SpriteSelector(Editor *editor);
 
 	void CreateEditorWindow(void);
@@ -27,9 +25,8 @@ private:
 	static void OnClickClose(widget_t *widget);
 	static void OnSelected(widget_t *widget);
 
-	widget_t *m_window;
-	widget_t *m_grid;
-	widget_t *m_gridTitle;
+	widget_t *m_grid = nullptr;
+	widget_t *m_gridTitle = nullptr;
 
-	OnSelected_t m_selectedCallback;
+	OnSelected_t m_selectedCallback = nullptr;
 };
