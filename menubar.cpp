@@ -12,6 +12,8 @@ MenuBar::MenuBar(Editor *editor) :
 
 MenuBar::~MenuBar(void)
 {
+	// Destroy the main widget. This will destroy all child widgets recursively.
+	widget_destroy(GetPanel());
 }
 
 void MenuBar::Create(void)

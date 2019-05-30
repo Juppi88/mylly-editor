@@ -7,8 +7,10 @@
 
 // -------------------------------------------------------------------------------------------------
 
+class ColourPicker;
 class Editor;
 class MenuBar;
+class ParticleEditor;
 class SideBar;
 class SpriteEditor;
 class SpriteSelector;

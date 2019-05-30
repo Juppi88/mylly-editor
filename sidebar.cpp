@@ -13,6 +13,9 @@ SideBar::SideBar(Editor *editor) :
 
 SideBar::~SideBar(void)
 {
+	// Destroy the main widget. This will destroy all child widgets recursively.
+	// Note that this includes all the sub-editors which are children of this panel!
+	widget_destroy(GetPanel());
 }
 
 void SideBar::Create(void)

@@ -34,12 +34,11 @@ public:
 
 	widget_t *GetPanel(void) const { return m_panel; }
 
+	virtual void OnSceneLoad(scene_t *scene) { UNUSED(scene); }
+	virtual void OnSceneUnload(void) {}
+
 protected:
-	virtual ~EditorWindow(void)
-	{
-		// Destroy the main widget. This will destroy all child widgets recursivecly.
-		widget_destroy(m_panel);
-	}
+	virtual ~EditorWindow(void) {}
 
 	EditorWindow(Editor *editor) : m_editor(editor) {}
 	Editor *GetEditor(void) const { return m_editor; }
