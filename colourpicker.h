@@ -50,6 +50,7 @@ private:
 	float m_alpha = 1.0f;
 
 	colour_t m_originalColour = COL_WHITE;
+	colour_t m_selectedColour = COL_WHITE;
 
 	OnColourSelected_t m_selectedCallback = nullptr;
 	void *m_selectedContext = nullptr;

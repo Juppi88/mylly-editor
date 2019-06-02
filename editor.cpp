@@ -62,6 +62,10 @@ void Editor::Process(void)
 	if (m_colourPicker->IsVisible()) {
 		m_colourPicker->Process();
 	}
+
+	if (m_particleEditor->IsVisible()) {
+		m_particleEditor->Process();
+	}
 }
 
 void Editor::OnSceneLoad(scene_t *scene)
@@ -329,6 +333,26 @@ widget_t *Editor::CreateColourPicker(widget_t *parent,
 	                         mgui_parameters.height - position.y);
 
 	return panel;
+}
+
+widget_t *Editor::CreateCheckbox(widget_t *parent,
+                                 anchor_type_t left_type, int16_t left_offset,
+                                 anchor_type_t right_type, int16_t right_offset,
+                                 anchor_type_t top_type, int16_t top_offset,
+                                 anchor_type_t bottom_type, int16_t bottom_offset)
+{
+	widget_t *checkbox = checkbox_create(parent);
+
+	widget_set_sprite(checkbox, res_get_sprite("ui-white/textbox_02"));
+	widget_set_colour(checkbox, COL_WHITE);
+	checkbox_set_icon(checkbox, res_get_sprite("ui-white/icon_check"));
+	checkbox_set_icon_colour(checkbox, col(35, 35, 35));
+
+	widget_set_anchors(checkbox,
+	                   left_type, left_offset, right_type, right_offset,
+	                   top_type, top_offset, bottom_type, bottom_offset);
+
+	return checkbox;
 }
 
 void Editor::OnCloseButtonClicked(widget_t *closeButton)

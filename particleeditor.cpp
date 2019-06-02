@@ -10,6 +10,8 @@
 #include <mylly/scene/emitter.h>
 #include <mylly/resources/resources.h>
 #include <mylly/renderer/shader.h>
+#include <mylly/core/time.h>
+#include <mylly/math/math.h>
 #include <stdlib.h>
 
 // -------------------------------------------------------------------------------------------------
@@ -53,6 +55,15 @@ void ParticleEditor::Create(void)
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Initial Burst"));
 	AddInputsToLabel(label, &m_inputEmitBurst);
 
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "World Space"));
+
+	m_checkWorldSpace = GetEditor()->CreateCheckbox(label,
+		ANCHOR_MIN, LABEL_WIDTH,
+		ANCHOR_MIN, LABEL_WIDTH + 24,
+		ANCHOR_MIN, 2,
+		ANCHOR_MIN, 26
+	);
+
 	AddMargin();
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Life (min/max)"));
@@ -90,6 +101,11 @@ void ParticleEditor::Create(void)
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "End size (min/max)"));
 	AddInputsToLabel(label, &m_inputEndSizeMin, &m_inputEndSizeMax);
 
+	AddMargin();
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Rotation (min/max)"));
+	AddInputsToLabel(label, &m_inputRotationSpeedMin, &m_inputRotationSpeedMax);
+
 	AddMargin(25);
 
 	m_buttonApply = AddWidgetRow(GetEditor()->CreateButton(panel, "Apply"), 30);
@@ -104,6 +120,28 @@ void ParticleEditor::Create(void)
 
 void ParticleEditor::Process(void)
 {
+	vec3_t position = vec3(
+		30 * cosf(0.75f * get_time().time),
+		0,
+		20 * cosf(3 * get_time().time)
+	);
+
+	obj_set_position(m_emitter->parent, position);
+
+	/*static float rotation = 0;
+	rotation -= get_time().delta_time * 90;
+
+	rotation = math_sanitize_angle_deg(rotation);
+
+	float rad = DEG_TO_RAD(rotation);
+	float radius = 15;
+
+	vec3_t position = vec3(radius * cosf(rad), 0, radius * sinf(rad));
+	obj_set_position(m_emitter->parent, position);
+
+	vec3_print(position);*/
+
+	//obj_set_local_rotation(m_emitter->parent, quat_from_euler_deg(0, 0, rotation));
 }
 
 void ParticleEditor::OnSceneLoad(scene_t *scene)
@@ -112,14 +150,23 @@ void ParticleEditor::OnSceneLoad(scene_t *scene)
 	m_emitter = obj_add_emitter(object);
 
 	m_emitter->max_particles = 1000;
-	m_emitter->emit_rate = 10;
-	m_emitter->emit_duration = 10;
+	m_emitter->is_world_space = true;
+	m_emitter->emit_rate = 500;
+	m_emitter->emit_duration = 60;
 	m_emitter->initial_burst = 50;
-	m_emitter->velocity.min = vec3(-5, -5, -5);
-	m_emitter->velocity.max = vec3(5, 5, 5);
+	m_emitter->velocity.min = vec3(-15, -15, -15);
+	m_emitter->velocity.max = vec3(15, 15, 15);
+	m_emitter->acceleration.min = vec3(-1, -1, -1);
+	m_emitter->acceleration.max = vec3(1, 1, 1);
+	m_emitter->start_size.min = 3;
+	m_emitter->start_size.max = 5;
+	m_emitter->end_size.min = 0;
+	m_emitter->end_size.max = 0.5f;
+	m_emitter->end_colour.min = col_a(255, 255, 255, 0);
+	m_emitter->end_colour.max = col_a(255, 255, 255, 0);
 
 	// TODO: Rotate particles towards the camera!
-	obj_set_local_rotation(object, quat_from_euler_deg(90, 00, 0));
+	//obj_set_local_rotation(object, quat_from_euler_deg(90, 00, 0));
 
 	// Copy initial values from the emitter. If the scene loaded for a second time, copy values back
 	// to the new emitter.
@@ -128,7 +175,7 @@ void ParticleEditor::OnSceneLoad(scene_t *scene)
 		CopyValuesFromEmitter();
 		m_valuesCopiedFromEmitter = true;
 	}
-	else {
+	else if (GetEditor()->IsVisible() && IsVisible()) {
 		ApplyValuesToEmitter();
 	}
 
@@ -253,26 +300,28 @@ void ParticleEditor::CopyValuesFromEmitter(void)
 	widget_set_text(m_inputEmitRate, "%.1f", m_emitter->emit_rate);
 	widget_set_text(m_inputEmitBurst, "%u", m_emitter->initial_burst);
 
-	widget_set_text(m_inputLifeMin, "%.2f", m_emitter->life.min);
-	widget_set_text(m_inputLifeMax, "%.2f", m_emitter->life.max);
+	checkbox_set_toggled(m_checkWorldSpace, m_emitter->is_world_space);
+
+	widget_set_text(m_inputLifeMin, "%.1f", m_emitter->life.min);
+	widget_set_text(m_inputLifeMax, "%.1f", m_emitter->life.max);
 
 	// Velocity
-	widget_set_text(m_inputVelocityMin[0], "%.2f", m_emitter->velocity.min.x);
-	widget_set_text(m_inputVelocityMin[1], "%.2f", m_emitter->velocity.min.y);
-	widget_set_text(m_inputVelocityMin[2], "%.2f", m_emitter->velocity.min.z);
+	widget_set_text(m_inputVelocityMin[0], "%.1f", m_emitter->velocity.min.x);
+	widget_set_text(m_inputVelocityMin[1], "%.1f", m_emitter->velocity.min.y);
+	widget_set_text(m_inputVelocityMin[2], "%.1f", m_emitter->velocity.min.z);
 
-	widget_set_text(m_inputVelocityMax[0], "%.2f", m_emitter->velocity.max.x);
-	widget_set_text(m_inputVelocityMax[1], "%.2f", m_emitter->velocity.max.y);
-	widget_set_text(m_inputVelocityMax[2], "%.2f", m_emitter->velocity.max.z);
+	widget_set_text(m_inputVelocityMax[0], "%.1f", m_emitter->velocity.max.x);
+	widget_set_text(m_inputVelocityMax[1], "%.1f", m_emitter->velocity.max.y);
+	widget_set_text(m_inputVelocityMax[2], "%.1f", m_emitter->velocity.max.z);
 
 	// Acceleration
-	widget_set_text(m_inputAccelerationMin[0], "%.2f", m_emitter->acceleration.min.x);
-	widget_set_text(m_inputAccelerationMin[1], "%.2f", m_emitter->acceleration.min.y);
-	widget_set_text(m_inputAccelerationMin[2], "%.2f", m_emitter->acceleration.min.z);
+	widget_set_text(m_inputAccelerationMin[0], "%.1f", m_emitter->acceleration.min.x);
+	widget_set_text(m_inputAccelerationMin[1], "%.1f", m_emitter->acceleration.min.y);
+	widget_set_text(m_inputAccelerationMin[2], "%.1f", m_emitter->acceleration.min.z);
 
-	widget_set_text(m_inputAccelerationMax[0], "%.2f", m_emitter->acceleration.max.x);
-	widget_set_text(m_inputAccelerationMax[1], "%.2f", m_emitter->acceleration.max.y);
-	widget_set_text(m_inputAccelerationMax[2], "%.2f", m_emitter->acceleration.max.z);
+	widget_set_text(m_inputAccelerationMax[0], "%.1f", m_emitter->acceleration.max.x);
+	widget_set_text(m_inputAccelerationMax[1], "%.1f", m_emitter->acceleration.max.y);
+	widget_set_text(m_inputAccelerationMax[2], "%.1f", m_emitter->acceleration.max.z);
 
 	// Colours
 	m_startColourMin = m_emitter->start_colour.min;
@@ -288,10 +337,14 @@ void ParticleEditor::CopyValuesFromEmitter(void)
 	SetPreviewColour(m_pickerEndColourMax, m_endColourMax);
 
 	// Size
-	widget_set_text(m_inputStartSizeMin, "%.2f", m_emitter->start_size.min);
-	widget_set_text(m_inputStartSizeMax, "%.2f", m_emitter->start_size.max);
-	widget_set_text(m_inputEndSizeMin, "%.2f", m_emitter->end_size.min);
-	widget_set_text(m_inputEndSizeMax, "%.2f", m_emitter->end_size.max);
+	widget_set_text(m_inputStartSizeMin, "%.1f", m_emitter->start_size.min);
+	widget_set_text(m_inputStartSizeMax, "%.1f", m_emitter->start_size.max);
+	widget_set_text(m_inputEndSizeMin, "%.1f", m_emitter->end_size.min);
+	widget_set_text(m_inputEndSizeMax, "%.1f", m_emitter->end_size.max);
+
+	// Rotation
+	widget_set_text(m_inputRotationSpeedMin, "%.1f", m_emitter->rotation_speed.min);
+	widget_set_text(m_inputRotationSpeedMax, "%.1f", m_emitter->rotation_speed.max);
 }
 
 void ParticleEditor::ApplyValuesToEmitter(void)
@@ -303,17 +356,32 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	m_emitter->emit_rate = GetInputFloat(m_inputEmitRate);
 	m_emitter->initial_burst = GetInputUShort(m_inputEmitBurst);
 
+	m_emitter->is_world_space = checkbox_is_toggled(m_checkWorldSpace);
+
+	m_emitter->life.min = GetInputFloat(m_inputLifeMin);
+	m_emitter->life.max = GetInputFloat(m_inputLifeMax);
+
 	// Velocity
 	v.x = GetInputFloat(m_inputVelocityMin[0]);
 	v.y = GetInputFloat(m_inputVelocityMin[1]);
 	v.z = GetInputFloat(m_inputVelocityMin[2]);
 	m_emitter->velocity.min = v;
 
-	// Acceleration
 	v.x = GetInputFloat(m_inputVelocityMax[0]);
 	v.y = GetInputFloat(m_inputVelocityMax[1]);
 	v.z = GetInputFloat(m_inputVelocityMax[2]);
 	m_emitter->velocity.max = v;
+
+	// Acceleration
+	v.x = GetInputFloat(m_inputAccelerationMin[0]);
+	v.y = GetInputFloat(m_inputAccelerationMin[1]);
+	v.z = GetInputFloat(m_inputAccelerationMin[2]);
+	m_emitter->acceleration.min = v;
+
+	v.x = GetInputFloat(m_inputAccelerationMax[0]);
+	v.y = GetInputFloat(m_inputAccelerationMax[1]);
+	v.z = GetInputFloat(m_inputAccelerationMax[2]);
+	m_emitter->acceleration.max = v;
 
 	// Colours
 	m_emitter->start_colour.min = m_startColourMin;
@@ -327,7 +395,12 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	m_emitter->end_size.min = GetInputFloat(m_inputEndSizeMin);
 	m_emitter->end_size.max = GetInputFloat(m_inputEndSizeMax);
 
-	emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
+	// Rotation
+	m_emitter->rotation_speed.min = GetInputFloat(m_inputRotationSpeedMin);
+	m_emitter->rotation_speed.max = GetInputFloat(m_inputRotationSpeedMax);
+
+	//emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
+	emitter_set_particle_sprite(m_emitter, res_get_sprite("0027"));
 	emitter_set_emit_shape(m_emitter, SHAPE_POINT, shape_point(vec3(0, -3, 0)));
 
 	// Restart the emitter.

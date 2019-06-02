@@ -57,6 +57,7 @@ private:
 	widget_t *m_inputEmitDuration = nullptr;
 	widget_t *m_inputEmitRate = nullptr;
 	widget_t *m_inputEmitBurst = nullptr;
+	widget_t *m_checkWorldSpace = nullptr;
 
 	widget_t *m_inputLifeMin = nullptr;
 	widget_t *m_inputLifeMax = nullptr;
@@ -72,6 +73,8 @@ private:
 	widget_t *m_inputStartSizeMax = nullptr;
 	widget_t *m_inputEndSizeMin = nullptr;
 	widget_t *m_inputEndSizeMax = nullptr;
+	widget_t *m_inputRotationSpeedMin = nullptr;
+	widget_t *m_inputRotationSpeedMax = nullptr;
 
 	colour_t m_startColourMin = COL_WHITE;
 	colour_t m_startColourMax = COL_WHITE;

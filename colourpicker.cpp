@@ -146,6 +146,7 @@ void ColourPicker::SelectColour(const colour_t &startColour,
                                 OnColourSelected_t callback, void *context)
 {
 	m_originalColour = startColour;
+	m_selectedColour = startColour;
 
 	m_selectedCallback = callback;
 	m_selectedContext = context;
@@ -160,6 +161,8 @@ void ColourPicker::SelectColour(const colour_t &startColour,
 
 void ColourPicker::SetColour(const colour_t &colour)
 {
+	m_selectedColour = colour;
+
 	// Apply alphaless colour to the preview panel.
 	widget_set_colour(m_previewPanel, colour);
 
@@ -189,6 +192,8 @@ void ColourPicker::SetAlpha(float value)
 
 	widget_set_text(m_alphaLabel, "%.0f", value);
 	colourpicker_set_brightness_alpha(m_picker, m_brightness, m_alpha);
+
+	m_selectedColour.a = (uint8_t)value;
 }
 
 void ColourPicker::ResetColour(void)
@@ -229,8 +234,17 @@ void ColourPicker::OnAlphaChanged(widget_t *slider)
 	if (slider != nullptr &&
 		slider->user_context != nullptr) {
 
+		float alpha = slider_get_value(slider);
+
 		ColourPicker *self = (ColourPicker *)slider->user_context;
-		self->SetAlpha(slider_get_value(slider));
+		self->SetAlpha(alpha);
+
+		if (self->m_selectedCallback != nullptr) {
+			self->m_selectedCallback(self->m_selectedColour, self->m_selectedContext);
+		}
+
+		// Update alpha on the preview panel and the alpha slider.
+		shader_set_uniform_float(self->m_previewPanel->custom_shader, "Alpha", alpha / 255.0f);
 	}
 }
 
