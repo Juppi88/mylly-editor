@@ -2,16 +2,20 @@
 #include "menubar.h"
 #include "sidebar.h"
 #include "editor.h"
+#include "resourcewriter.h"
 #include "colourpicker.h"
 #include <mylly/mgui/widget.h>
 #include <mylly/mgui/text.h>
 #include <mylly/scene/scene.h>
 #include <mylly/scene/object.h>
 #include <mylly/scene/emitter.h>
+#include <mylly/scene/sprite.h>
 #include <mylly/resources/resources.h>
 #include <mylly/renderer/shader.h>
 #include <mylly/core/time.h>
+#include <mylly/core/string.h>
 #include <mylly/math/math.h>
+#include <mylly/io/log.h>
 #include <stdlib.h>
 
 // -------------------------------------------------------------------------------------------------
@@ -108,8 +112,25 @@ void ParticleEditor::Create(void)
 
 	AddMargin(25);
 
-	m_buttonApply = AddWidgetRow(GetEditor()->CreateButton(panel, "Apply"), 30);
+	// Add a checkbox to move the effect around for demonstration.
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Move Effect"));
+
+	m_checkMoveEffect = GetEditor()->CreateCheckbox(label,
+		ANCHOR_MIN, LABEL_WIDTH,
+		ANCHOR_MIN, LABEL_WIDTH + 24,
+		ANCHOR_MIN, 2,
+		ANCHOR_MIN, 26
+	);
+
+	AddMargin(25);
+
+	m_buttonApply = AddWidgetRow(GetEditor()->CreateButton(panel, "Start"), 30);
 	button_set_clicked_handler(m_buttonApply, OnApplyClicked);
+
+	AddMargin(5);
+
+	m_buttonSave = AddWidgetRow(GetEditor()->CreateButton(panel, "Save"), 30);
+	button_set_clicked_handler(m_buttonSave, OnSaveClicked);
 
 	// Hide the editor until needed.
 	//SetVisible(false);
@@ -120,34 +141,32 @@ void ParticleEditor::Create(void)
 
 void ParticleEditor::Process(void)
 {
-	vec3_t position = vec3(
-		30 * cosf(0.75f * get_time().time),
-		0,
-		20 * cosf(3 * get_time().time)
-	);
+	// TODO: Do this relative to camera!
+	vec3_t position = vec3_zero();
+
+	// If the move around checkbox is checked, calculate a path for the effect.
+	if (checkbox_is_toggled(m_checkMoveEffect)) {
+
+		position = vec3(
+			25 * cosf(0.75f * get_time().time),
+			0,
+			18 * cosf(3 * get_time().time)
+		);
+	}
 
 	obj_set_position(m_emitter->parent, position);
-
-	/*static float rotation = 0;
-	rotation -= get_time().delta_time * 90;
-
-	rotation = math_sanitize_angle_deg(rotation);
-
-	float rad = DEG_TO_RAD(rotation);
-	float radius = 15;
-
-	vec3_t position = vec3(radius * cosf(rad), 0, radius * sinf(rad));
-	obj_set_position(m_emitter->parent, position);
-
-	vec3_print(position);*/
-
-	//obj_set_local_rotation(m_emitter->parent, quat_from_euler_deg(0, 0, rotation));
 }
 
 void ParticleEditor::OnSceneLoad(scene_t *scene)
 {
 	object_t *object = scene_create_object(scene, nullptr);
-	m_emitter = obj_add_emitter(object);
+
+	// TODO: Load emitter resource and use it instead of assigning it directly to the object!
+	m_emitter = res_get_emitter("shipexplosion");
+	object->emitter = m_emitter; // TODO: This right here is wrong!
+	m_emitter->parent = object;
+
+	/*m_emitter = obj_add_emitter(object);
 
 	m_emitter->max_particles = 1000;
 	m_emitter->is_world_space = true;
@@ -163,10 +182,7 @@ void ParticleEditor::OnSceneLoad(scene_t *scene)
 	m_emitter->end_size.min = 0;
 	m_emitter->end_size.max = 0.5f;
 	m_emitter->end_colour.min = col_a(255, 255, 255, 0);
-	m_emitter->end_colour.max = col_a(255, 255, 255, 0);
-
-	// TODO: Rotate particles towards the camera!
-	//obj_set_local_rotation(object, quat_from_euler_deg(90, 00, 0));
+	m_emitter->end_colour.max = col_a(255, 255, 255, 0);*/
 
 	// Copy initial values from the emitter. If the scene loaded for a second time, copy values back
 	// to the new emitter.
@@ -185,6 +201,8 @@ void ParticleEditor::OnSceneLoad(scene_t *scene)
 void ParticleEditor::OnSceneUnload(void)
 {
 	if (m_emitter != nullptr) {
+
+		m_emitter->parent->emitter = nullptr; // TODO: Remove this line when using cloned emitters!
 		obj_destroy(m_emitter->parent);
 	}
 }
@@ -399,13 +417,86 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	m_emitter->rotation_speed.min = GetInputFloat(m_inputRotationSpeedMin);
 	m_emitter->rotation_speed.max = GetInputFloat(m_inputRotationSpeedMax);
 
+	// TODO: Make it possible to change the sprite and emit shape from the editor.
 	//emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
-	emitter_set_particle_sprite(m_emitter, res_get_sprite("0027"));
-	emitter_set_emit_shape(m_emitter, SHAPE_POINT, shape_point(vec3(0, -3, 0)));
+	//emitter_set_particle_sprite(m_emitter, res_get_sprite("0027"));
+	//emitter_set_emit_shape(m_emitter, SHAPE_POINT, shape_point(vec3(0, -3, 0)));
 
 	// Restart the emitter.
-	emitter_start(m_emitter, m_emitter->max_particles, m_emitter->initial_burst,
-	              m_emitter->emit_rate, m_emitter->emit_duration);
+	emitter_start(m_emitter);
+}
+
+void ParticleEditor::SaveEmitterToFile(void)
+{
+	if (m_emitter == nullptr) {
+		return;
+	}
+
+	ResourceWriter writer;
+
+	if (string_is_null_or_empty(m_emitter->resource.path) ||
+		!writer.BeginWrite(m_emitter->resource.path)) {
+
+		log_warning("Editor", "Could not write to emitter resource file '%s'.",
+		             m_emitter->resource.path);
+
+		return;
+	}
+
+	writer.Write("version", 1);
+
+	writer.BeginArray("emitters");
+	{
+		// TODO: Do this for each subemitter
+		writer.BeginObject();
+		{
+			writer.Write("sprite", m_emitter->sprite != nullptr ? m_emitter->sprite->resource.res_name : "");
+			writer.Write("is_world_space", m_emitter->is_world_space);
+			writer.Write("max_particles", m_emitter->max_particles);
+			writer.Write("emit_duration", m_emitter->emit_duration);
+			writer.Write("emit_rate", m_emitter->emit_rate);
+			writer.Write("initial_burst", m_emitter->initial_burst);
+			writer.Write("life_min", m_emitter->life.min);
+			writer.Write("life_max", m_emitter->life.max);
+			writer.Write("start_size_min", m_emitter->start_size.min);
+			writer.Write("start_size_max", m_emitter->start_size.max);
+			writer.Write("end_size_min", m_emitter->end_size.min);
+			writer.Write("end_size_max", m_emitter->end_size.max);
+			writer.Write("rotation_min", m_emitter->rotation_speed.min);
+			writer.Write("rotation_max", m_emitter->rotation_speed.max);
+			writer.Write("velocity_min", m_emitter->velocity.min);
+			writer.Write("velocity_max", m_emitter->velocity.max);
+			writer.Write("acceleration_min", m_emitter->acceleration.min);
+			writer.Write("acceleration_max", m_emitter->acceleration.max);
+			writer.Write("start_colour_min", m_emitter->start_colour.min);
+			writer.Write("start_colour_max", m_emitter->start_colour.max);
+			writer.Write("end_colour_min", m_emitter->end_colour.min);
+			writer.Write("end_colour_max", m_emitter->end_colour.max);
+
+			switch (m_emitter->shape_type) {
+
+				case SHAPE_POINT:
+					writer.Write("emit_centre", m_emitter->shape.point.centre);
+					break;
+
+				case SHAPE_CIRCLE:
+					writer.Write("emit_centre", m_emitter->shape.circle.centre);
+					writer.Write("emit_radius", m_emitter->shape.circle.radius);
+					break;
+
+				case SHAPE_BOX:
+					writer.Write("emit_box_min", m_emitter->shape.box.min);
+					writer.Write("emit_box_max", m_emitter->shape.box.max);
+					break;
+			}
+
+		}
+		writer.EndObject();
+	}
+	writer.EndArray();
+
+	// Write the resource file to disk.
+	writer.FinishWrite();
 }
 
 void ParticleEditor::OnMenuOpenClicked(widget_t *button)
@@ -418,6 +509,12 @@ void ParticleEditor::OnApplyClicked(widget_t *button)
 {
 	UNUSED(button);
 	Instance()->ApplyValuesToEmitter();
+}
+
+void ParticleEditor::OnSaveClicked(widget_t *button)
+{
+	UNUSED(button);
+	Instance()->SaveEmitterToFile();
 }
 
 void ParticleEditor::OnColourPickerInputEvent(widget_event_t *event)

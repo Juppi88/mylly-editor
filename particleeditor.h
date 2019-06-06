@@ -39,8 +39,11 @@ private:
 	void CopyValuesFromEmitter(void);
 	void ApplyValuesToEmitter(void);
 
+	void SaveEmitterToFile(void);
+
 	static void OnMenuOpenClicked(widget_t *button);
 	static void OnApplyClicked(widget_t *button);
+	static void OnSaveClicked(widget_t *button);
 	static void OnColourPickerInputEvent(widget_event_t *event);
 	static void OnColourSelected(const colour_t &colour, void *context);
 
@@ -82,4 +85,7 @@ private:
 	colour_t m_endColourMax = COL_WHITE;
 
 	widget_t *m_buttonApply = nullptr;
+	widget_t *m_buttonSave = nullptr;
+
+	widget_t *m_checkMoveEffect = nullptr;
 };
