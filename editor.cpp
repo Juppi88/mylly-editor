@@ -355,6 +355,35 @@ widget_t *Editor::CreateCheckbox(widget_t *parent,
 	return checkbox;
 }
 
+widget_t *Editor::CreateDropDown(widget_t *parent,
+	                             anchor_type_t left_type, int16_t left_offset,
+	                             anchor_type_t right_type, int16_t right_offset,
+	                             anchor_type_t top_type, int16_t top_offset,
+	                             anchor_type_t bottom_type, int16_t bottom_offset)
+{
+	widget_t *drop = dropdown_create(parent);
+
+	widget_set_sprite(drop, res_get_sprite("ui-white/textbox_02"));
+	widget_set_text_font(drop, res_get_font("Louis George Cafe", 14));
+	widget_set_text_colour(drop, COL_BLACK);
+	widget_set_text_alignment(drop, ALIGNMENT_LEFT);
+	//widget_set_text_margin(drop, 8, 8, 10, 8);
+
+	widget_set_anchors(drop,
+	                   left_type, left_offset, right_type, right_offset,
+	                   top_type, top_offset, bottom_type, bottom_offset);
+
+	dropdown_set_arrow(drop, res_get_sprite("ui-white/arrow_down"));
+	dropdown_set_arrow_colour(drop, col(35, 35, 35));
+
+	dropdown_set_selection(drop, res_get_sprite("ui-white/textbox_02"));
+	dropdown_set_selection_colour(drop, col(175, 175, 175));
+
+	dropdown_set_background(drop, res_get_sprite("ui-white/textbox_02"));
+
+	return drop;
+}
+
 void Editor::OnCloseButtonClicked(widget_t *closeButton)
 {
 	Editor *editor = (Editor *)closeButton->user_context;

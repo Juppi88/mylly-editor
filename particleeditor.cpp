@@ -48,16 +48,16 @@ void ParticleEditor::Create(void)
 	AddWidgetRow(GetEditor()->CreateLabel(panel, "Particle Editor"), 20, 10);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Particle Count"));
-	AddInputsToLabel(label, &m_inputNumParticles);
+	AddInputsToLabel(label, nullptr, &m_inputNumParticles);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Duration"));
-	AddInputsToLabel(label, &m_inputEmitDuration);
+	AddInputsToLabel(label, nullptr, &m_inputEmitDuration);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Rate"));
-	AddInputsToLabel(label, &m_inputEmitRate);
+	AddInputsToLabel(label, nullptr, &m_inputEmitRate);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Initial Burst"));
-	AddInputsToLabel(label, &m_inputEmitBurst);
+	AddInputsToLabel(label, nullptr, &m_inputEmitBurst);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "World Space"));
 
@@ -70,24 +70,14 @@ void ParticleEditor::Create(void)
 
 	AddMargin();
 
-	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Life (min/max)"));
-	AddInputsToLabel(label, &m_inputLifeMin, &m_inputLifeMax);
-
-	AddMargin();
-
-	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Velocity (min)"));
-	AddInputsToLabel(label, &m_inputVelocityMin[0], &m_inputVelocityMin[1], &m_inputVelocityMin[2]);
-
-	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Velocity (max)"));
-	AddInputsToLabel(label, &m_inputVelocityMax[0], &m_inputVelocityMax[1], &m_inputVelocityMax[2]);
-
-	AddMargin();
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Speed (min/max)"));
+	AddInputsToLabel(label, nullptr, &m_inputSpeedMin, &m_inputSpeedMax);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Acceleration (min)"));
-	AddInputsToLabel(label, &m_inputAccelerationMin[0], &m_inputAccelerationMin[1], &m_inputAccelerationMin[2]);
+	AddInputsToLabel(label, nullptr, &m_inputAccelerationMin[0], &m_inputAccelerationMin[1], &m_inputAccelerationMin[2]);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Acceleration (max)"));
-	AddInputsToLabel(label, &m_inputAccelerationMax[0], &m_inputAccelerationMax[1], &m_inputAccelerationMax[2]);
+	AddInputsToLabel(label, nullptr, &m_inputAccelerationMax[0], &m_inputAccelerationMax[1], &m_inputAccelerationMax[2]);
 
 	AddMargin();
 
@@ -99,16 +89,68 @@ void ParticleEditor::Create(void)
 
 	AddMargin();
 
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Life (min/max)"));
+	AddInputsToLabel(label, nullptr, &m_inputLifeMin, &m_inputLifeMax);
+
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Start size (min/max)"));
-	AddInputsToLabel(label, &m_inputStartSizeMin, &m_inputStartSizeMax);
+	AddInputsToLabel(label, nullptr, &m_inputStartSizeMin, &m_inputStartSizeMax);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "End size (min/max)"));
-	AddInputsToLabel(label, &m_inputEndSizeMin, &m_inputEndSizeMax);
-
-	AddMargin();
+	AddInputsToLabel(label, nullptr, &m_inputEndSizeMin, &m_inputEndSizeMax);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Rotation (min/max)"));
-	AddInputsToLabel(label, &m_inputRotationSpeedMin, &m_inputRotationSpeedMax);
+	AddInputsToLabel(label, nullptr, &m_inputRotationSpeedMin, &m_inputRotationSpeedMax);
+
+	AddMargin(5);
+
+	// Emit shapes
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Shape"));
+	AddDropdownToLabel(label, &m_dropdownEmitShape);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Position"));
+	AddInputsToLabel(label, nullptr, &m_inputEmitPosition[0], &m_inputEmitPosition[1], &m_inputEmitPosition[2]);
+
+	// Emit shape containers
+	m_emitCircleContainer = widget_create(panel);
+	widget_set_anchors(m_emitCircleContainer,
+		ANCHOR_MIN, 0, ANCHOR_MAX, 0, ANCHOR_MIN, 0, ANCHOR_MAX, 0);
+
+	m_emitBoxContainer = widget_create(panel);
+	widget_set_anchors(m_emitBoxContainer,
+		ANCHOR_MIN, 0, ANCHOR_MAX, 0, ANCHOR_MIN, 0, ANCHOR_MAX, 0);
+
+	m_emitConeContainer = widget_create(panel);
+	widget_set_anchors(m_emitConeContainer,
+		ANCHOR_MIN, 0, ANCHOR_MAX, 0, ANCHOR_MIN, 0, ANCHOR_MAX, 0);
+
+	// Store current Y level so we can spawn multiple widgets there.
+	int16_t y = m_nextWidgetOffsetY;
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitCircleContainer, "Circle Radius"));
+	AddInputsToLabel(label, m_emitCircleContainer, &m_inputEmitCircleRadius);
+
+	// Reset widget layer Y.
+	m_nextWidgetOffsetY = y;
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitBoxContainer, "Box Extents"));
+	AddInputsToLabel(label, m_emitBoxContainer,
+		&m_inputEmitBoxExtents[0], &m_inputEmitBoxExtents[1], &m_inputEmitBoxExtents[2]);
+
+	m_nextWidgetOffsetY = y;
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitConeContainer, "Cone Angle"));
+	AddInputsToLabel(label, m_emitConeContainer, &m_inputEmitConeAngle);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitConeContainer, "Cone Radius"));
+	AddInputsToLabel(label, m_emitConeContainer, &m_inputEmitConeRadius);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitConeContainer, "Cone Volume"));
+	AddInputsToLabel(label, m_emitConeContainer, &m_inputEmitConeVolume);
+
+	// Hide all emit shape fields.
+	widget_set_visible(m_emitCircleContainer, false);
+	widget_set_visible(m_emitBoxContainer, false);
+	widget_set_visible(m_emitConeContainer, false);
 
 	AddMargin(25);
 
@@ -131,6 +173,12 @@ void ParticleEditor::Create(void)
 
 	m_buttonSave = AddWidgetRow(GetEditor()->CreateButton(panel, "Save"), 30);
 	button_set_clicked_handler(m_buttonSave, OnSaveClicked);
+
+	// Add a change callback and options to emit shape dropdown.
+	dropdown_set_selected_handler(m_dropdownEmitShape, OnEmitShapeSelected);
+	dropdown_add_option(m_dropdownEmitShape, "Circle", (void *)SHAPE_CIRCLE);
+	dropdown_add_option(m_dropdownEmitShape, "Cone", (void *)SHAPE_CONE);
+	dropdown_add_option(m_dropdownEmitShape, "Box", (void *)SHAPE_BOX);
 
 	// Hide the editor until needed.
 	//SetVisible(false);
@@ -221,7 +269,7 @@ widget_t *ParticleEditor::AddWidgetRow(widget_t *widget, int16_t height, int16_t
 	return widget;
 }
 
-void ParticleEditor::AddInputsToLabel(widget_t *parentLabel, widget_t **outInput,
+void ParticleEditor::AddInputsToLabel(widget_t *parentLabel, widget_t *parentPanel, widget_t **outInput,
                                      widget_t **outInput2, widget_t **outInput3, widget_t **outInput4)
 {
 	if (outInput == nullptr) {
@@ -244,9 +292,13 @@ void ParticleEditor::AddInputsToLabel(widget_t *parentLabel, widget_t **outInput
 	int16_t y = widget_get_position(parentLabel).y;
 
 	// Create the input boxes.
+	if (parentPanel == nullptr) {
+		parentPanel = GetPanel();
+	}
+
 	for (uint32_t i = 0; i < numInputs; i++) {
 
-		*inputReferences[i] = GetEditor()->CreateInputBox(GetPanel(),
+		*inputReferences[i] = GetEditor()->CreateInputBox(parentPanel,
 			ANCHOR_MIN, x,
 			ANCHOR_MIN, x + inputWidth,
 			ANCHOR_MIN, y + 2,
@@ -270,8 +322,7 @@ void ParticleEditor::AddColourPickersToLabel(widget_t *parentLabel, widget_t **o
 	int16_t x = LABEL_WIDTH;
 	int16_t y = widget_get_position(parentLabel).y;
 	
-
-	// Create the input boxes.
+	// Create the pickers.
 	for (uint32_t i = 0; i < 2; i++) {
 
 		widget_t *widget = GetEditor()->CreateColourPicker(GetPanel(),
@@ -288,6 +339,26 @@ void ParticleEditor::AddColourPickersToLabel(widget_t *parentLabel, widget_t **o
 
 		x += pickerWidth + INPUT_MARGIN;
 	}
+}
+
+void ParticleEditor::AddDropdownToLabel(widget_t *parentLabel, widget_t **outDropdown)
+{
+	if (outDropdown == nullptr) {
+		return;
+	}
+
+	// Calculate the width of the dropdown.
+	int16_t dropdownWidth = widget_get_size(parentLabel->parent).x - LABEL_WIDTH;
+	int16_t x = LABEL_WIDTH;
+	int16_t y = widget_get_position(parentLabel).y;
+	
+	// Create the input boxes.
+	*outDropdown = GetEditor()->CreateDropDown(GetPanel(),
+		ANCHOR_MIN, x,
+		ANCHOR_MIN, x + dropdownWidth,
+		ANCHOR_MIN, y + 2,
+		ANCHOR_MIN, y + widget_get_size(parentLabel).y - 2
+	);
 }
 
 float ParticleEditor::GetInputFloat(widget_t *inputBox)
@@ -323,14 +394,9 @@ void ParticleEditor::CopyValuesFromEmitter(void)
 	widget_set_text(m_inputLifeMin, "%.1f", m_emitter->life.min);
 	widget_set_text(m_inputLifeMax, "%.1f", m_emitter->life.max);
 
-	// Velocity
-	widget_set_text(m_inputVelocityMin[0], "%.1f", m_emitter->velocity.min.x);
-	widget_set_text(m_inputVelocityMin[1], "%.1f", m_emitter->velocity.min.y);
-	widget_set_text(m_inputVelocityMin[2], "%.1f", m_emitter->velocity.min.z);
-
-	widget_set_text(m_inputVelocityMax[0], "%.1f", m_emitter->velocity.max.x);
-	widget_set_text(m_inputVelocityMax[1], "%.1f", m_emitter->velocity.max.y);
-	widget_set_text(m_inputVelocityMax[2], "%.1f", m_emitter->velocity.max.z);
+	// Speed
+	widget_set_text(m_inputSpeedMin, "%.1f", m_emitter->speed.min);
+	widget_set_text(m_inputSpeedMax, "%.1f", m_emitter->speed.max);
 
 	// Acceleration
 	widget_set_text(m_inputAccelerationMin[0], "%.1f", m_emitter->acceleration.min.x);
@@ -363,6 +429,21 @@ void ParticleEditor::CopyValuesFromEmitter(void)
 	// Rotation
 	widget_set_text(m_inputRotationSpeedMin, "%.1f", m_emitter->rotation_speed.min);
 	widget_set_text(m_inputRotationSpeedMax, "%.1f", m_emitter->rotation_speed.max);
+
+	// Emit shape
+	dropdown_select_option_by_data(m_dropdownEmitShape, (void *)m_emitter->shape.type);
+
+	widget_set_text(m_inputEmitPosition[0], "%.1f", m_emitter->shape.position.x);
+	widget_set_text(m_inputEmitPosition[1], "%.1f", m_emitter->shape.position.y);
+	widget_set_text(m_inputEmitPosition[2], "%.1f", m_emitter->shape.position.z);
+
+	widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitter->shape.circle.radius);
+	widget_set_text(m_inputEmitBoxExtents[0], "%.1f", m_emitter->shape.box.extents.x);
+	widget_set_text(m_inputEmitBoxExtents[1], "%.1f", m_emitter->shape.box.extents.y);
+	widget_set_text(m_inputEmitBoxExtents[2], "%.1f", m_emitter->shape.box.extents.z);
+	widget_set_text(m_inputEmitConeAngle, "%.1f", m_emitter->shape.cone.angle);
+	widget_set_text(m_inputEmitConeRadius, "%.1f", m_emitter->shape.cone.radius);
+	widget_set_text(m_inputEmitConeVolume, "%.1f", m_emitter->shape.cone.emit_volume);
 }
 
 void ParticleEditor::ApplyValuesToEmitter(void)
@@ -379,16 +460,9 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	m_emitter->life.min = GetInputFloat(m_inputLifeMin);
 	m_emitter->life.max = GetInputFloat(m_inputLifeMax);
 
-	// Velocity
-	v.x = GetInputFloat(m_inputVelocityMin[0]);
-	v.y = GetInputFloat(m_inputVelocityMin[1]);
-	v.z = GetInputFloat(m_inputVelocityMin[2]);
-	m_emitter->velocity.min = v;
-
-	v.x = GetInputFloat(m_inputVelocityMax[0]);
-	v.y = GetInputFloat(m_inputVelocityMax[1]);
-	v.z = GetInputFloat(m_inputVelocityMax[2]);
-	m_emitter->velocity.max = v;
+	// Speed
+	m_emitter->speed.min = GetInputFloat(m_inputSpeedMin);
+	m_emitter->speed.max = GetInputFloat(m_inputSpeedMax);
 
 	// Acceleration
 	v.x = GetInputFloat(m_inputAccelerationMin[0]);
@@ -416,6 +490,45 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	// Rotation
 	m_emitter->rotation_speed.min = GetInputFloat(m_inputRotationSpeedMin);
 	m_emitter->rotation_speed.max = GetInputFloat(m_inputRotationSpeedMax);
+
+	// Emit shape
+	vec3_t emitPos = vec3(
+		GetInputFloat(m_inputEmitPosition[0]),
+		GetInputFloat(m_inputEmitPosition[1]),
+		GetInputFloat(m_inputEmitPosition[2])
+	);
+
+	const char *emitShapeName;
+	void *emitShapePtr;
+	emit_shape_t shape;
+	
+	dropdown_get_selected_option(m_dropdownEmitShape, &emitShapeName, &emitShapePtr);
+
+	switch ((intptr_t)emitShapePtr) {
+
+		case SHAPE_CIRCLE:
+			shape = shape_circle(emitPos, GetInputFloat(m_inputEmitCircleRadius));
+			break;
+
+		case SHAPE_BOX:
+			v.x = GetInputFloat(m_inputEmitBoxExtents[0]);
+			v.y = GetInputFloat(m_inputEmitBoxExtents[1]);
+			v.z = GetInputFloat(m_inputEmitBoxExtents[2]);
+
+			shape = shape_box(emitPos, v);
+			break;
+
+		case SHAPE_CONE:
+			shape = shape_cone(emitPos,
+				GetInputFloat(m_inputEmitConeAngle),
+				GetInputFloat(m_inputEmitConeRadius),
+				GetInputFloat(m_inputEmitConeVolume)
+			);
+			break;
+	}
+
+	emitter_set_emit_shape(m_emitter, shape);
+
 
 	// TODO: Make it possible to change the sprite and emit shape from the editor.
 	//emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
@@ -464,8 +577,8 @@ void ParticleEditor::SaveEmitterToFile(void)
 			writer.Write("end_size_max", m_emitter->end_size.max);
 			writer.Write("rotation_min", m_emitter->rotation_speed.min);
 			writer.Write("rotation_max", m_emitter->rotation_speed.max);
-			writer.Write("velocity_min", m_emitter->velocity.min);
-			writer.Write("velocity_max", m_emitter->velocity.max);
+			writer.Write("speed_min", m_emitter->speed.min);
+			writer.Write("speed_max", m_emitter->speed.max);
 			writer.Write("acceleration_min", m_emitter->acceleration.min);
 			writer.Write("acceleration_max", m_emitter->acceleration.max);
 			writer.Write("start_colour_min", m_emitter->start_colour.min);
@@ -473,20 +586,23 @@ void ParticleEditor::SaveEmitterToFile(void)
 			writer.Write("end_colour_min", m_emitter->end_colour.min);
 			writer.Write("end_colour_max", m_emitter->end_colour.max);
 
-			switch (m_emitter->shape_type) {
+			// Emit shape
+			writer.Write("emit_position", m_emitter->shape.position);
 
-				case SHAPE_POINT:
-					writer.Write("emit_centre", m_emitter->shape.point.centre);
-					break;
+			switch (m_emitter->shape.type) {
 
 				case SHAPE_CIRCLE:
-					writer.Write("emit_centre", m_emitter->shape.circle.centre);
-					writer.Write("emit_radius", m_emitter->shape.circle.radius);
+					writer.Write("emit_circle_radius", m_emitter->shape.circle.radius);
 					break;
 
 				case SHAPE_BOX:
-					writer.Write("emit_box_min", m_emitter->shape.box.min);
-					writer.Write("emit_box_max", m_emitter->shape.box.max);
+					writer.Write("emit_box_extents", m_emitter->shape.box.extents);
+					break;
+
+				case SHAPE_CONE:
+					writer.Write("emit_cone_angle", m_emitter->shape.cone.angle);
+					writer.Write("emit_cone_radius", m_emitter->shape.cone.radius);
+					writer.Write("emit_cone_volume", m_emitter->shape.cone.emit_volume);
 					break;
 			}
 
@@ -570,5 +686,34 @@ void ParticleEditor::OnColourSelected(const colour_t &colour, void *context)
 	// Update the preview.
 	if (updatePreview) {
 		Instance()->SetPreviewColour((widget_t *)context, colour);
+	}
+}
+
+void ParticleEditor::OnEmitShapeSelected(widget_t *dropdown, const char *option, void *data)
+{
+	UNUSED(dropdown);
+	UNUSED(option);
+
+	// Hide all emit shape field containers.
+	widget_set_visible(Instance()->m_emitCircleContainer, false);
+	widget_set_visible(Instance()->m_emitBoxContainer, false);
+	widget_set_visible(Instance()->m_emitConeContainer, false);
+
+	emit_shape_type_t type = (emit_shape_type_t)(intptr_t)data;
+
+	// Display the fields for the selected shape.
+	switch (type) {
+
+		case SHAPE_CIRCLE:
+			widget_set_visible(Instance()->m_emitCircleContainer, true);
+			break;
+
+		case SHAPE_BOX:
+			widget_set_visible(Instance()->m_emitBoxContainer, true);
+			break;
+
+		case SHAPE_CONE:
+			widget_set_visible(Instance()->m_emitConeContainer, true);
+			break;
 	}
 }

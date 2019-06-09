@@ -92,6 +92,12 @@ public:
 	                         anchor_type_t top_type = ANCHOR_MIN, int16_t top_offset = 0,
 	                         anchor_type_t bottom_type = ANCHOR_MAX, int16_t bottom_offset = 0);
 
+	widget_t *CreateDropDown(widget_t *parent,
+	                         anchor_type_t left_type = ANCHOR_MIN, int16_t left_offset = 0,
+	                         anchor_type_t right_type = ANCHOR_MAX, int16_t right_offset = 0,
+	                         anchor_type_t top_type = ANCHOR_MIN, int16_t top_offset = 0,
+	                         anchor_type_t bottom_type = ANCHOR_MAX, int16_t bottom_offset = 0);
+
 private:
 	static void OnCloseButtonClicked(widget_t *closeButton);
 
