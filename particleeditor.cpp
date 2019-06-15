@@ -31,6 +31,9 @@ ParticleEditor::~ParticleEditor(void)
 
 void ParticleEditor::Create(void)
 {
+	// Collect a list of available resources.
+	res_foreach_emitter(AddToEffectList);
+
 	// Create an empty widget as a container for the editor.
 	widget_t *panel = widget_create(GetEditor()->GetSideBar()->GetPanel());
 
@@ -47,6 +50,15 @@ void ParticleEditor::Create(void)
 
 	AddWidgetRow(GetEditor()->CreateLabel(panel, "Particle Editor"), 20, 10);
 
+	// Effect selector
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Effect"));
+	AddDropdownToLabel(label, panel, &m_dropdownEffect);
+
+	dropdown_set_selected_handler(m_dropdownEffect, OnEffectSelected);
+
+	AddMargin(15);
+
+	// Emit properties
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Particle Count"));
 	AddInputsToLabel(label, nullptr, &m_inputNumParticles);
 
@@ -70,8 +82,11 @@ void ParticleEditor::Create(void)
 
 	AddMargin();
 
-	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Speed (min/max)"));
-	AddInputsToLabel(label, nullptr, &m_inputSpeedMin, &m_inputSpeedMax);
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Start spd (min/max)"));
+	AddInputsToLabel(label, nullptr, &m_inputStartSpeedMin, &m_inputStartSpeedMax);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "End spd (min/max)"));
+	AddInputsToLabel(label, nullptr, &m_inputEndSpeedMin, &m_inputEndSpeedMax);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Acceleration (min)"));
 	AddInputsToLabel(label, nullptr, &m_inputAccelerationMin[0], &m_inputAccelerationMin[1], &m_inputAccelerationMin[2]);
@@ -105,7 +120,7 @@ void ParticleEditor::Create(void)
 
 	// Emit shapes
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Shape"));
-	AddDropdownToLabel(label, &m_dropdownEmitShape);
+	AddDropdownToLabel(label, panel, &m_dropdownEmitShape);
 
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Emit Position"));
 	AddInputsToLabel(label, nullptr, &m_inputEmitPosition[0], &m_inputEmitPosition[1], &m_inputEmitPosition[2]);
@@ -126,7 +141,7 @@ void ParticleEditor::Create(void)
 	// Store current Y level so we can spawn multiple widgets there.
 	int16_t y = m_nextWidgetOffsetY;
 
-	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitCircleContainer, "Circle Radius"));
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_emitCircleContainer, "Shape Radius"));
 	AddInputsToLabel(label, m_emitCircleContainer, &m_inputEmitCircleRadius);
 
 	// Reset widget layer Y.
@@ -152,12 +167,45 @@ void ParticleEditor::Create(void)
 	widget_set_visible(m_emitBoxContainer, false);
 	widget_set_visible(m_emitConeContainer, false);
 
+	AddMargin();
+
+	// Subemitters
+	m_subemitterContainer = widget_create(panel);
+
+	widget_set_anchors(m_subemitterContainer,
+		ANCHOR_MIN, 0, ANCHOR_MAX, 0, ANCHOR_MIN, 0, ANCHOR_MAX, 0);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Subemitter"));
+	AddDropdownWithAddRemoveButtons(label, &m_dropdownSubemitter,
+	                                &m_buttonAddSubemitter, &m_buttonRemoveSubemitter);
+
+	button_set_clicked_handler(m_buttonAddSubemitter, OnAddSubemitterClicked);
+	button_set_clicked_handler(m_buttonRemoveSubemitter, OnRemoveSubemitterClicked);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_subemitterContainer, "Subemitter Effect"));
+	AddDropdownToLabel(label, m_subemitterContainer, &m_dropdownSubemitterResource);
+
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(m_subemitterContainer, "Trigger"));
+	AddDropdownToLabel(label, m_subemitterContainer, &m_dropdownSubemitterType);
+
 	AddMargin(25);
 
 	// Add a checkbox to move the effect around for demonstration.
 	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Move Effect"));
 
 	m_checkMoveEffect = GetEditor()->CreateCheckbox(label,
+		ANCHOR_MIN, LABEL_WIDTH,
+		ANCHOR_MIN, LABEL_WIDTH + 24,
+		ANCHOR_MIN, 2,
+		ANCHOR_MIN, 26
+	);
+
+	AddMargin(5);
+
+	// Same but rotate it 90deg.
+	label = AddWidgetRow(GetEditor()->CreateSmallLabel(panel, "Rotate 90 deg"));
+
+	m_checkRotateEffect = GetEditor()->CreateCheckbox(label,
 		ANCHOR_MIN, LABEL_WIDTH,
 		ANCHOR_MIN, LABEL_WIDTH + 24,
 		ANCHOR_MIN, 2,
@@ -177,8 +225,27 @@ void ParticleEditor::Create(void)
 	// Add a change callback and options to emit shape dropdown.
 	dropdown_set_selected_handler(m_dropdownEmitShape, OnEmitShapeSelected);
 	dropdown_add_option(m_dropdownEmitShape, "Circle", (void *)SHAPE_CIRCLE);
+	dropdown_add_option(m_dropdownEmitShape, "Sphere", (void *)SHAPE_SPHERE);
 	dropdown_add_option(m_dropdownEmitShape, "Cone", (void *)SHAPE_CONE);
 	dropdown_add_option(m_dropdownEmitShape, "Box", (void *)SHAPE_BOX);
+
+	// Populate the editable effect list.
+	emitter_t *emitter;
+
+	arr_foreach(m_effectList, emitter) {
+
+		dropdown_add_option(m_dropdownEffect, emitter->resource.res_name, emitter);
+		dropdown_add_option(m_dropdownSubemitterResource, emitter->resource.res_name, emitter);
+	}
+
+	// Populate subemitter types.
+	dropdown_add_option(m_dropdownSubemitterType, "On Create", (void *)SUBEMITTER_CREATE);
+	dropdown_add_option(m_dropdownSubemitterType, "On Particle Spawn", (void *)SUBEMITTER_PARTICLE_SPAWN);
+	dropdown_add_option(m_dropdownSubemitterType, "On Particle Death", (void *)SUBEMITTER_PARTICLE_DEATH);
+
+	dropdown_set_selected_handler(m_dropdownSubemitter, OnSubemitterSelected);
+	dropdown_set_selected_handler(m_dropdownSubemitterResource, OnSubemitterEffectSelected);
+	dropdown_set_selected_handler(m_dropdownSubemitterType, OnSubemitterTypeSelected);
 
 	// Hide the editor until needed.
 	//SetVisible(false);
@@ -189,6 +256,10 @@ void ParticleEditor::Create(void)
 
 void ParticleEditor::Process(void)
 {
+	if (m_emitter == nullptr) {
+		return;
+	}
+
 	// TODO: Do this relative to camera!
 	vec3_t position = vec3_zero();
 
@@ -207,51 +278,20 @@ void ParticleEditor::Process(void)
 
 void ParticleEditor::OnSceneLoad(scene_t *scene)
 {
-	object_t *object = scene_create_object(scene, nullptr);
+	UNUSED(scene);
 
-	// TODO: Load emitter resource and use it instead of assigning it directly to the object!
-	m_emitter = res_get_emitter("shipexplosion");
-	object->emitter = m_emitter; // TODO: This right here is wrong!
-	m_emitter->parent = object;
-
-	/*m_emitter = obj_add_emitter(object);
-
-	m_emitter->max_particles = 1000;
-	m_emitter->is_world_space = true;
-	m_emitter->emit_rate = 500;
-	m_emitter->emit_duration = 60;
-	m_emitter->initial_burst = 50;
-	m_emitter->velocity.min = vec3(-15, -15, -15);
-	m_emitter->velocity.max = vec3(15, 15, 15);
-	m_emitter->acceleration.min = vec3(-1, -1, -1);
-	m_emitter->acceleration.max = vec3(1, 1, 1);
-	m_emitter->start_size.min = 3;
-	m_emitter->start_size.max = 5;
-	m_emitter->end_size.min = 0;
-	m_emitter->end_size.max = 0.5f;
-	m_emitter->end_colour.min = col_a(255, 255, 255, 0);
-	m_emitter->end_colour.max = col_a(255, 255, 255, 0);*/
-
-	// Copy initial values from the emitter. If the scene loaded for a second time, copy values back
-	// to the new emitter.
-	if (!m_valuesCopiedFromEmitter) {
-
-		CopyValuesFromEmitter();
-		m_valuesCopiedFromEmitter = true;
+	// Create a new scene object with a copy of the edited emitter resource.
+	if (m_emitterResource != nullptr)	 {
+		LoadEmitter(m_emitterResource);
 	}
-	else if (GetEditor()->IsVisible() && IsVisible()) {
-		ApplyValuesToEmitter();
-	}
-
-	// TODO: Either attach the emitter to a camera or create a new camera for editing the emitter!
 }
 
 void ParticleEditor::OnSceneUnload(void)
 {
 	if (m_emitter != nullptr) {
 
-		m_emitter->parent->emitter = nullptr; // TODO: Remove this line when using cloned emitters!
 		obj_destroy(m_emitter->parent);
+		m_emitter = nullptr;
 	}
 }
 
@@ -341,7 +381,8 @@ void ParticleEditor::AddColourPickersToLabel(widget_t *parentLabel, widget_t **o
 	}
 }
 
-void ParticleEditor::AddDropdownToLabel(widget_t *parentLabel, widget_t **outDropdown)
+void ParticleEditor::AddDropdownToLabel(widget_t *parentLabel,
+                                        widget_t *parentPanel, widget_t **outDropdown)
 {
 	if (outDropdown == nullptr) {
 		return;
@@ -353,12 +394,61 @@ void ParticleEditor::AddDropdownToLabel(widget_t *parentLabel, widget_t **outDro
 	int16_t y = widget_get_position(parentLabel).y;
 	
 	// Create the input boxes.
+	*outDropdown = GetEditor()->CreateDropDown(parentPanel,
+		ANCHOR_MIN, x,
+		ANCHOR_MIN, x + dropdownWidth,
+		ANCHOR_MIN, y + 2,
+		ANCHOR_MIN, y + widget_get_size(parentLabel).y - 2
+	);
+}
+
+void ParticleEditor::AddDropdownWithAddRemoveButtons(widget_t *parentLabel, widget_t **outDropdown,
+                                               widget_t **outAddButton, widget_t **outRemoveButton)
+{
+	if (outDropdown == nullptr || outAddButton == nullptr || outRemoveButton == nullptr) {
+		return;
+	}
+
+	// Calculate the width of the dropdown.
+	const int16_t buttonWidth = 20;
+	const int16_t buttonPadding = 2;
+
+	int16_t dropdownWidth = widget_get_size(parentLabel->parent).x - LABEL_WIDTH -
+		2 * (buttonWidth - buttonPadding);
+
+	int16_t x = LABEL_WIDTH;
+	int16_t y = widget_get_position(parentLabel).y;
+	
+	// Create the input box.
 	*outDropdown = GetEditor()->CreateDropDown(GetPanel(),
 		ANCHOR_MIN, x,
 		ANCHOR_MIN, x + dropdownWidth,
 		ANCHOR_MIN, y + 2,
 		ANCHOR_MIN, y + widget_get_size(parentLabel).y - 2
 	);
+
+	x += dropdownWidth + buttonPadding;
+
+	// Create the add button.
+	*outAddButton = GetEditor()->CreateButton(GetPanel(), "+",
+		ANCHOR_MIN, x,
+		ANCHOR_MIN, x + buttonWidth,
+		ANCHOR_MIN, y + 2,
+		ANCHOR_MIN, y + widget_get_size(parentLabel).y - 2
+	);
+
+	x += buttonWidth + buttonPadding;
+
+	// Create the remove button.
+	*outRemoveButton = GetEditor()->CreateButton(GetPanel(), "-",
+		ANCHOR_MIN, x,
+		ANCHOR_MIN, x + buttonWidth,
+		ANCHOR_MIN, y + 2,
+		ANCHOR_MIN, y + widget_get_size(parentLabel).y - 2
+	);
+
+	widget_set_text_alignment(*outAddButton, ALIGNMENT_BOTTOM);
+	widget_set_text_alignment(*outRemoveButton, ALIGNMENT_BOTTOM);
 }
 
 float ParticleEditor::GetInputFloat(widget_t *inputBox)
@@ -381,115 +471,160 @@ void ParticleEditor::SetPreviewColour(widget_t *widget, const colour_t &colour)
 	shader_set_uniform_float(widget->custom_shader, "Alpha", colour.a / 255.0f);
 }
 
+void ParticleEditor::LoadEmitter(emitter_t *resource, bool start)
+{
+	// The scene has not been created yet.
+	if (GetEditor()->GetScene() == nullptr) {
+		return;
+	}
+
+	// Destroy the old emitter.
+	if (m_emitter != nullptr) {
+
+		obj_destroy(m_emitter->parent);
+		m_emitter = nullptr;
+	}
+
+	if (resource != m_loadedEmitterResource) {
+
+		m_loadedEmitterResource = resource;
+
+		// Copy values from the emitter resource into the UI.
+		CopyValuesFromEmitter();
+	}
+
+	// Create a new object and attach a copy of the emitter resource to it.
+	object_t *object = scene_create_object(GetEditor()->GetScene(), nullptr);
+	m_emitter = obj_add_emitter(object, resource);
+
+	// TODO: Either attach the emitter to a camera or create a new camera for editing the emitter!
+
+	// Start the emitter.
+	if (start) {
+		emitter_start(m_emitter);
+	}
+
+	// TODO: Should there be per-emitter rotation in addition to object's rotation?
+	if (checkbox_is_toggled(m_checkRotateEffect)) {
+		obj_set_local_rotation(m_emitter->parent, quat_from_euler_deg(90, 0, 0));
+	}
+}
+
 void ParticleEditor::CopyValuesFromEmitter(void)
 {
+	widget_set_text(m_inputNumParticles, "%u", m_emitterResource->max_particles);
+	widget_set_text(m_inputEmitDuration, "%.1f", m_emitterResource->emit_duration);
+	widget_set_text(m_inputEmitRate, "%.1f", m_emitterResource->emit_rate);
+	widget_set_text(m_inputEmitBurst, "%u", m_emitterResource->initial_burst);
 
-	widget_set_text(m_inputNumParticles, "%u", m_emitter->max_particles);
-	widget_set_text(m_inputEmitDuration, "%.1f", m_emitter->emit_duration);
-	widget_set_text(m_inputEmitRate, "%.1f", m_emitter->emit_rate);
-	widget_set_text(m_inputEmitBurst, "%u", m_emitter->initial_burst);
+	checkbox_set_toggled(m_checkWorldSpace, m_emitterResource->is_world_space);
 
-	checkbox_set_toggled(m_checkWorldSpace, m_emitter->is_world_space);
-
-	widget_set_text(m_inputLifeMin, "%.1f", m_emitter->life.min);
-	widget_set_text(m_inputLifeMax, "%.1f", m_emitter->life.max);
+	widget_set_text(m_inputLifeMin, "%.1f", m_emitterResource->life.min);
+	widget_set_text(m_inputLifeMax, "%.1f", m_emitterResource->life.max);
 
 	// Speed
-	widget_set_text(m_inputSpeedMin, "%.1f", m_emitter->speed.min);
-	widget_set_text(m_inputSpeedMax, "%.1f", m_emitter->speed.max);
+	widget_set_text(m_inputStartSpeedMin, "%.1f", m_emitterResource->start_speed.min);
+	widget_set_text(m_inputStartSpeedMax, "%.1f", m_emitterResource->start_speed.max);
+	widget_set_text(m_inputEndSpeedMin, "%.1f", m_emitterResource->end_speed.min);
+	widget_set_text(m_inputEndSpeedMax, "%.1f", m_emitterResource->end_speed.max);
 
 	// Acceleration
-	widget_set_text(m_inputAccelerationMin[0], "%.1f", m_emitter->acceleration.min.x);
-	widget_set_text(m_inputAccelerationMin[1], "%.1f", m_emitter->acceleration.min.y);
-	widget_set_text(m_inputAccelerationMin[2], "%.1f", m_emitter->acceleration.min.z);
+	widget_set_text(m_inputAccelerationMin[0], "%.1f", m_emitterResource->acceleration.min.x);
+	widget_set_text(m_inputAccelerationMin[1], "%.1f", m_emitterResource->acceleration.min.y);
+	widget_set_text(m_inputAccelerationMin[2], "%.1f", m_emitterResource->acceleration.min.z);
 
-	widget_set_text(m_inputAccelerationMax[0], "%.1f", m_emitter->acceleration.max.x);
-	widget_set_text(m_inputAccelerationMax[1], "%.1f", m_emitter->acceleration.max.y);
-	widget_set_text(m_inputAccelerationMax[2], "%.1f", m_emitter->acceleration.max.z);
+	widget_set_text(m_inputAccelerationMax[0], "%.1f", m_emitterResource->acceleration.max.x);
+	widget_set_text(m_inputAccelerationMax[1], "%.1f", m_emitterResource->acceleration.max.y);
+	widget_set_text(m_inputAccelerationMax[2], "%.1f", m_emitterResource->acceleration.max.z);
 
 	// Colours
-	m_startColourMin = m_emitter->start_colour.min;
+	m_startColourMin = m_emitterResource->start_colour.min;
 	SetPreviewColour(m_pickerStartColourMin, m_startColourMin);
 
-	m_startColourMax = m_emitter->start_colour.max;
+	m_startColourMax = m_emitterResource->start_colour.max;
 	SetPreviewColour(m_pickerStartColourMax, m_startColourMax);
 
-	m_endColourMin = m_emitter->end_colour.min;
+	m_endColourMin = m_emitterResource->end_colour.min;
 	SetPreviewColour(m_pickerEndColourMin, m_endColourMin);
 
-	m_endColourMax = m_emitter->end_colour.max;
+	m_endColourMax = m_emitterResource->end_colour.max;
 	SetPreviewColour(m_pickerEndColourMax, m_endColourMax);
 
 	// Size
-	widget_set_text(m_inputStartSizeMin, "%.1f", m_emitter->start_size.min);
-	widget_set_text(m_inputStartSizeMax, "%.1f", m_emitter->start_size.max);
-	widget_set_text(m_inputEndSizeMin, "%.1f", m_emitter->end_size.min);
-	widget_set_text(m_inputEndSizeMax, "%.1f", m_emitter->end_size.max);
+	widget_set_text(m_inputStartSizeMin, "%.1f", m_emitterResource->start_size.min);
+	widget_set_text(m_inputStartSizeMax, "%.1f", m_emitterResource->start_size.max);
+	widget_set_text(m_inputEndSizeMin, "%.1f", m_emitterResource->end_size.min);
+	widget_set_text(m_inputEndSizeMax, "%.1f", m_emitterResource->end_size.max);
 
 	// Rotation
-	widget_set_text(m_inputRotationSpeedMin, "%.1f", m_emitter->rotation_speed.min);
-	widget_set_text(m_inputRotationSpeedMax, "%.1f", m_emitter->rotation_speed.max);
+	widget_set_text(m_inputRotationSpeedMin, "%.1f", m_emitterResource->rotation_speed.min);
+	widget_set_text(m_inputRotationSpeedMax, "%.1f", m_emitterResource->rotation_speed.max);
 
 	// Emit shape
-	dropdown_select_option_by_data(m_dropdownEmitShape, (void *)m_emitter->shape.type);
+	dropdown_select_option_by_data(m_dropdownEmitShape, (void *)m_emitterResource->shape.type);
 
-	widget_set_text(m_inputEmitPosition[0], "%.1f", m_emitter->shape.position.x);
-	widget_set_text(m_inputEmitPosition[1], "%.1f", m_emitter->shape.position.y);
-	widget_set_text(m_inputEmitPosition[2], "%.1f", m_emitter->shape.position.z);
+	widget_set_text(m_inputEmitPosition[0], "%.1f", m_emitterResource->shape.position.x);
+	widget_set_text(m_inputEmitPosition[1], "%.1f", m_emitterResource->shape.position.y);
+	widget_set_text(m_inputEmitPosition[2], "%.1f", m_emitterResource->shape.position.z);
 
-	widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitter->shape.circle.radius);
-	widget_set_text(m_inputEmitBoxExtents[0], "%.1f", m_emitter->shape.box.extents.x);
-	widget_set_text(m_inputEmitBoxExtents[1], "%.1f", m_emitter->shape.box.extents.y);
-	widget_set_text(m_inputEmitBoxExtents[2], "%.1f", m_emitter->shape.box.extents.z);
-	widget_set_text(m_inputEmitConeAngle, "%.1f", m_emitter->shape.cone.angle);
-	widget_set_text(m_inputEmitConeRadius, "%.1f", m_emitter->shape.cone.radius);
-	widget_set_text(m_inputEmitConeVolume, "%.1f", m_emitter->shape.cone.emit_volume);
+	widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitterResource->shape.circle.radius);
+	widget_set_text(m_inputEmitBoxExtents[0], "%.1f", m_emitterResource->shape.box.extents.x);
+	widget_set_text(m_inputEmitBoxExtents[1], "%.1f", m_emitterResource->shape.box.extents.y);
+	widget_set_text(m_inputEmitBoxExtents[2], "%.1f", m_emitterResource->shape.box.extents.z);
+	widget_set_text(m_inputEmitConeAngle, "%.1f", m_emitterResource->shape.cone.angle);
+	widget_set_text(m_inputEmitConeRadius, "%.1f", m_emitterResource->shape.cone.radius);
+	widget_set_text(m_inputEmitConeVolume, "%.1f", m_emitterResource->shape.cone.emit_volume);
+
+	// Refresh the subemitter list.
+	RefreshSubemitterList(0);
 }
 
 void ParticleEditor::ApplyValuesToEmitter(void)
 {
 	vec3_t v;
 
-	m_emitter->max_particles = GetInputUShort(m_inputNumParticles);
-	m_emitter->emit_duration = GetInputFloat(m_inputEmitDuration);
-	m_emitter->emit_rate = GetInputFloat(m_inputEmitRate);
-	m_emitter->initial_burst = GetInputUShort(m_inputEmitBurst);
+	m_emitterResource->max_particles = GetInputUShort(m_inputNumParticles);
+	m_emitterResource->emit_duration = GetInputFloat(m_inputEmitDuration);
+	m_emitterResource->emit_rate = GetInputFloat(m_inputEmitRate);
+	m_emitterResource->initial_burst = GetInputUShort(m_inputEmitBurst);
 
-	m_emitter->is_world_space = checkbox_is_toggled(m_checkWorldSpace);
+	m_emitterResource->is_world_space = checkbox_is_toggled(m_checkWorldSpace);
 
-	m_emitter->life.min = GetInputFloat(m_inputLifeMin);
-	m_emitter->life.max = GetInputFloat(m_inputLifeMax);
+	m_emitterResource->life.min = GetInputFloat(m_inputLifeMin);
+	m_emitterResource->life.max = GetInputFloat(m_inputLifeMax);
 
 	// Speed
-	m_emitter->speed.min = GetInputFloat(m_inputSpeedMin);
-	m_emitter->speed.max = GetInputFloat(m_inputSpeedMax);
+	m_emitterResource->start_speed.min = GetInputFloat(m_inputStartSpeedMin);
+	m_emitterResource->start_speed.max = GetInputFloat(m_inputStartSpeedMax);
+	m_emitterResource->end_speed.min = GetInputFloat(m_inputEndSpeedMin);
+	m_emitterResource->end_speed.max = GetInputFloat(m_inputEndSpeedMax);
 
 	// Acceleration
 	v.x = GetInputFloat(m_inputAccelerationMin[0]);
 	v.y = GetInputFloat(m_inputAccelerationMin[1]);
 	v.z = GetInputFloat(m_inputAccelerationMin[2]);
-	m_emitter->acceleration.min = v;
+	m_emitterResource->acceleration.min = v;
 
 	v.x = GetInputFloat(m_inputAccelerationMax[0]);
 	v.y = GetInputFloat(m_inputAccelerationMax[1]);
 	v.z = GetInputFloat(m_inputAccelerationMax[2]);
-	m_emitter->acceleration.max = v;
+	m_emitterResource->acceleration.max = v;
 
 	// Colours
-	m_emitter->start_colour.min = m_startColourMin;
-	m_emitter->start_colour.max = m_startColourMax;
-	m_emitter->end_colour.min = m_endColourMin;
-	m_emitter->end_colour.max = m_endColourMax;
+	m_emitterResource->start_colour.min = m_startColourMin;
+	m_emitterResource->start_colour.max = m_startColourMax;
+	m_emitterResource->end_colour.min = m_endColourMin;
+	m_emitterResource->end_colour.max = m_endColourMax;
 
 	// Size
-	m_emitter->start_size.min = GetInputFloat(m_inputStartSizeMin);
-	m_emitter->start_size.max = GetInputFloat(m_inputStartSizeMax);
-	m_emitter->end_size.min = GetInputFloat(m_inputEndSizeMin);
-	m_emitter->end_size.max = GetInputFloat(m_inputEndSizeMax);
+	m_emitterResource->start_size.min = GetInputFloat(m_inputStartSizeMin);
+	m_emitterResource->start_size.max = GetInputFloat(m_inputStartSizeMax);
+	m_emitterResource->end_size.min = GetInputFloat(m_inputEndSizeMin);
+	m_emitterResource->end_size.max = GetInputFloat(m_inputEndSizeMax);
 
 	// Rotation
-	m_emitter->rotation_speed.min = GetInputFloat(m_inputRotationSpeedMin);
-	m_emitter->rotation_speed.max = GetInputFloat(m_inputRotationSpeedMax);
+	m_emitterResource->rotation_speed.min = GetInputFloat(m_inputRotationSpeedMin);
+	m_emitterResource->rotation_speed.max = GetInputFloat(m_inputRotationSpeedMax);
 
 	// Emit shape
 	vec3_t emitPos = vec3(
@@ -498,16 +633,19 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 		GetInputFloat(m_inputEmitPosition[2])
 	);
 
-	const char *emitShapeName;
-	void *emitShapePtr;
-	emit_shape_t shape;
-	
-	dropdown_get_selected_option(m_dropdownEmitShape, &emitShapeName, &emitShapePtr);
 
-	switch ((intptr_t)emitShapePtr) {
+	emit_shape_t shape;
+	emit_shape_type_t type =
+		(emit_shape_type_t)(intptr_t)dropdown_get_selected_option_data(m_dropdownEmitShape);
+
+	switch (type) {
 
 		case SHAPE_CIRCLE:
 			shape = shape_circle(emitPos, GetInputFloat(m_inputEmitCircleRadius));
+			break;
+
+		case SHAPE_SPHERE:
+			shape = shape_sphere(emitPos, GetInputFloat(m_inputEmitCircleRadius));
 			break;
 
 		case SHAPE_BOX:
@@ -527,89 +665,110 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 			break;
 	}
 
-	emitter_set_emit_shape(m_emitter, shape);
-
+	emitter_set_emit_shape(m_emitterResource, shape);
 
 	// TODO: Make it possible to change the sprite and emit shape from the editor.
 	//emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
 	//emitter_set_particle_sprite(m_emitter, res_get_sprite("0027"));
 	//emitter_set_emit_shape(m_emitter, SHAPE_POINT, shape_point(vec3(0, -3, 0)));
-
-	// Restart the emitter.
-	emitter_start(m_emitter);
 }
 
 void ParticleEditor::SaveEmitterToFile(void)
 {
-	if (m_emitter == nullptr) {
+	if (m_emitterResource == nullptr) {
 		return;
 	}
 
 	ResourceWriter writer;
 
-	if (string_is_null_or_empty(m_emitter->resource.path) ||
-		!writer.BeginWrite(m_emitter->resource.path)) {
+	if (string_is_null_or_empty(m_emitterResource->resource.path) ||
+		!writer.BeginWrite(m_emitterResource->resource.path)) {
 
 		log_warning("Editor", "Could not write to emitter resource file '%s'.",
-		             m_emitter->resource.path);
+		             m_emitterResource->resource.path);
 
 		return;
 	}
 
 	writer.Write("version", 1);
 
-	writer.BeginArray("emitters");
+	writer.BeginObject("emitter");
 	{
-		// TODO: Do this for each subemitter
-		writer.BeginObject();
-		{
-			writer.Write("sprite", m_emitter->sprite != nullptr ? m_emitter->sprite->resource.res_name : "");
-			writer.Write("is_world_space", m_emitter->is_world_space);
-			writer.Write("max_particles", m_emitter->max_particles);
-			writer.Write("emit_duration", m_emitter->emit_duration);
-			writer.Write("emit_rate", m_emitter->emit_rate);
-			writer.Write("initial_burst", m_emitter->initial_burst);
-			writer.Write("life_min", m_emitter->life.min);
-			writer.Write("life_max", m_emitter->life.max);
-			writer.Write("start_size_min", m_emitter->start_size.min);
-			writer.Write("start_size_max", m_emitter->start_size.max);
-			writer.Write("end_size_min", m_emitter->end_size.min);
-			writer.Write("end_size_max", m_emitter->end_size.max);
-			writer.Write("rotation_min", m_emitter->rotation_speed.min);
-			writer.Write("rotation_max", m_emitter->rotation_speed.max);
-			writer.Write("speed_min", m_emitter->speed.min);
-			writer.Write("speed_max", m_emitter->speed.max);
-			writer.Write("acceleration_min", m_emitter->acceleration.min);
-			writer.Write("acceleration_max", m_emitter->acceleration.max);
-			writer.Write("start_colour_min", m_emitter->start_colour.min);
-			writer.Write("start_colour_max", m_emitter->start_colour.max);
-			writer.Write("end_colour_min", m_emitter->end_colour.min);
-			writer.Write("end_colour_max", m_emitter->end_colour.max);
+		const char *spriteName = (m_emitterResource->sprite != nullptr ?
+		                          m_emitterResource->sprite->resource.res_name : "");
 
-			// Emit shape
-			writer.Write("emit_position", m_emitter->shape.position);
+		writer.Write("sprite", spriteName);
+		writer.Write("is_world_space", m_emitterResource->is_world_space);
+		writer.Write("max_particles", m_emitterResource->max_particles);
+		writer.Write("emit_duration", m_emitterResource->emit_duration);
+		writer.Write("emit_rate", m_emitterResource->emit_rate);
+		writer.Write("initial_burst", m_emitterResource->initial_burst);
+		writer.Write("life_min", m_emitterResource->life.min);
+		writer.Write("life_max", m_emitterResource->life.max);
+		writer.Write("start_size_min", m_emitterResource->start_size.min);
+		writer.Write("start_size_max", m_emitterResource->start_size.max);
+		writer.Write("end_size_min", m_emitterResource->end_size.min);
+		writer.Write("end_size_max", m_emitterResource->end_size.max);
+		writer.Write("rotation_min", m_emitterResource->rotation_speed.min);
+		writer.Write("rotation_max", m_emitterResource->rotation_speed.max);
+		writer.Write("start_speed_min", m_emitterResource->start_speed.min);
+		writer.Write("start_speed_max", m_emitterResource->start_speed.max);
+		writer.Write("end_speed_min", m_emitterResource->end_speed.min);
+		writer.Write("end_speed_max", m_emitterResource->end_speed.max);
+		writer.Write("acceleration_min", m_emitterResource->acceleration.min);
+		writer.Write("acceleration_max", m_emitterResource->acceleration.max);
+		writer.Write("start_colour_min", m_emitterResource->start_colour.min);
+		writer.Write("start_colour_max", m_emitterResource->start_colour.max);
+		writer.Write("end_colour_min", m_emitterResource->end_colour.min);
+		writer.Write("end_colour_max", m_emitterResource->end_colour.max);
 
-			switch (m_emitter->shape.type) {
+		// Emit shape
+		writer.Write("emit_position", m_emitterResource->shape.position);
 
-				case SHAPE_CIRCLE:
-					writer.Write("emit_circle_radius", m_emitter->shape.circle.radius);
-					break;
+		switch (m_emitterResource->shape.type) {
 
-				case SHAPE_BOX:
-					writer.Write("emit_box_extents", m_emitter->shape.box.extents);
-					break;
+			case SHAPE_CIRCLE:
+				writer.Write("emit_circle_radius", m_emitterResource->shape.circle.radius);
+				break;
 
-				case SHAPE_CONE:
-					writer.Write("emit_cone_angle", m_emitter->shape.cone.angle);
-					writer.Write("emit_cone_radius", m_emitter->shape.cone.radius);
-					writer.Write("emit_cone_volume", m_emitter->shape.cone.emit_volume);
-					break;
+			case SHAPE_SPHERE:
+				writer.Write("emit_sphere_radius", m_emitterResource->shape.sphere.radius);
+				break;
+
+			case SHAPE_BOX:
+				writer.Write("emit_box_extents", m_emitterResource->shape.box.extents);
+				break;
+
+			case SHAPE_CONE:
+				writer.Write("emit_cone_angle", m_emitterResource->shape.cone.angle);
+				writer.Write("emit_cone_radius", m_emitterResource->shape.cone.radius);
+				writer.Write("emit_cone_volume", m_emitterResource->shape.cone.emit_volume);
+				break;
+		}
+
+		// Subemitters
+		writer.BeginArray("subemitters");
+
+		for (uint32_t i = 0; i < m_emitterResource->subemitters.count; i++) {
+
+			subemitter_t &subemitter = m_emitterResource->subemitters.items[i];
+
+			// Skip subemitters which don't define a particle emitter.
+			if (subemitter.emitter == nullptr) {
+				continue;
 			}
 
+			writer.BeginObject();
+
+				writer.Write("effect", subemitter.emitter->resource.res_name);
+				writer.Write("type", (int)subemitter.type);
+
+			writer.EndObject();
 		}
-		writer.EndObject();
+
+		writer.EndArray();
 	}
-	writer.EndArray();
+	writer.EndObject();
 
 	// Write the resource file to disk.
 	writer.FinishWrite();
@@ -624,13 +783,31 @@ void ParticleEditor::OnMenuOpenClicked(widget_t *button)
 void ParticleEditor::OnApplyClicked(widget_t *button)
 {
 	UNUSED(button);
+
+	// Apply current values to the template and restart the preview emitter.
 	Instance()->ApplyValuesToEmitter();
+	Instance()->LoadEmitter(Instance()->m_emitterResource, true);
 }
 
 void ParticleEditor::OnSaveClicked(widget_t *button)
 {
 	UNUSED(button);
+
+	// Apply current values to the template and save it into a resource file.
+	Instance()->ApplyValuesToEmitter();
 	Instance()->SaveEmitterToFile();
+}
+
+void ParticleEditor::OnEffectSelected(widget_t *dropdown, const char *option, void *data)
+{
+	UNUSED(dropdown);
+	UNUSED(option);
+
+	Instance()->m_emitterResource = (emitter_t *)data;
+
+	if (Instance()->GetEditor()->GetScene() != nullptr) {
+		Instance()->LoadEmitter(Instance()->m_emitterResource);
+	}
 }
 
 void ParticleEditor::OnColourPickerInputEvent(widget_event_t *event)
@@ -705,6 +882,7 @@ void ParticleEditor::OnEmitShapeSelected(widget_t *dropdown, const char *option,
 	switch (type) {
 
 		case SHAPE_CIRCLE:
+		case SHAPE_SPHERE:
 			widget_set_visible(Instance()->m_emitCircleContainer, true);
 			break;
 
@@ -715,5 +893,137 @@ void ParticleEditor::OnEmitShapeSelected(widget_t *dropdown, const char *option,
 		case SHAPE_CONE:
 			widget_set_visible(Instance()->m_emitConeContainer, true);
 			break;
+	}
+}
+
+void ParticleEditor::OnSubemitterSelected(widget_t *dropdown, const char *option, void *data)
+{
+	UNUSED(dropdown);
+	UNUSED(option);
+
+	if (Instance()->m_emitterResource != nullptr) {
+		Instance()->RefreshSubEmitter((intptr_t)data);
+	}
+}
+
+void ParticleEditor::OnSubemitterEffectSelected(widget_t *dropdown, const char *option, void *data)
+{
+	UNUSED(dropdown);
+	UNUSED(option);
+
+	if (Instance()->m_emitterResource != nullptr) {
+
+		uint32_t selected =
+			(intptr_t)dropdown_get_selected_option_data(Instance()->m_dropdownSubemitter);
+
+		Instance()->m_emitterResource->subemitters.items[selected].emitter = (emitter_t *)data;
+	}
+}
+
+void ParticleEditor::OnSubemitterTypeSelected(widget_t *dropdown, const char *option, void *data)
+{
+	UNUSED(dropdown);
+	UNUSED(option);
+
+	if (Instance()->m_emitterResource != nullptr) {
+
+		uint32_t selected =
+			(intptr_t)dropdown_get_selected_option_data(Instance()->m_dropdownSubemitter);
+
+		Instance()->m_emitterResource->subemitters.items[selected].type = (subemitter_type_t)(intptr_t)data;
+	}
+}
+
+void ParticleEditor::RefreshSubEmitter(uint32_t subemitterIndex)
+{
+	if (subemitterIndex >= m_emitterResource->subemitters.count) {
+		return;
+	}
+
+	subemitter_t &subemitter = m_emitterResource->subemitters.items[subemitterIndex];
+
+	dropdown_select_option_by_data(m_dropdownSubemitterResource, subemitter.emitter);
+	dropdown_select_option_by_data(m_dropdownSubemitterType, (void *)subemitter.type);
+}
+
+void ParticleEditor::RefreshSubemitterList(uint32_t selectSubemitterIndex)
+{
+	dropdown_clear_options(m_dropdownSubemitter);
+
+	char option[32];
+
+	for (size_t i = 0; i < m_emitterResource->subemitters.count; i++) {
+
+		snprintf(option, sizeof(option), "Subemitter %lu", i + 1);
+		dropdown_add_option(m_dropdownSubemitter, option, (void *)i);
+	}
+
+	// Select the first subemitter by default.
+	if (selectSubemitterIndex < m_emitterResource->subemitters.count) {
+
+		const char *subemitterEffect =
+			(m_emitterResource->subemitters.items[selectSubemitterIndex].emitter != nullptr ?
+			m_emitterResource->subemitters.items[selectSubemitterIndex].emitter->resource.name : "");
+
+		dropdown_select_option(m_dropdownSubemitterResource, subemitterEffect);
+		dropdown_select_option_by_data(m_dropdownSubemitterType,
+			(void *)m_emitterResource->subemitters.items[selectSubemitterIndex].type);
+
+		dropdown_select_option_by_data(m_dropdownSubemitter, (void *)(long)selectSubemitterIndex);
+	}
+
+	// Display or hide subemitter settings based on whether there are subemitters or not.
+	widget_set_visible(m_subemitterContainer, m_emitterResource->subemitters.count != 0);
+}
+
+void ParticleEditor::AddSubemitter(void)
+{
+	// Get currently selected subemitter values and create a new subemitter from them.
+	emitter_t *effect =
+		(emitter_t *)dropdown_get_selected_option_data(m_dropdownSubemitterResource);
+
+	subemitter_type_t type =
+		(subemitter_type_t)(intptr_t)dropdown_get_selected_option_data(m_dropdownSubemitterType);
+
+	arr_push(m_emitterResource->subemitters, create_subemitter(type, effect));
+
+	// Refresh the subemitter list and select the new subemitter.
+	RefreshSubemitterList(arr_last_index(m_emitterResource->subemitters));
+}
+
+void ParticleEditor::RemoveSubemitter(uint32_t subemitterIndex)
+{
+	arr_remove_at(m_emitterResource->subemitters, subemitterIndex);
+
+	// Refresh the subemitter list and select the first subemitter.
+	RefreshSubemitterList(0);
+}
+
+void ParticleEditor::OnAddSubemitterClicked(widget_t *button)
+{
+	UNUSED(button);
+
+	if (Instance()->m_emitterResource != nullptr) {
+		Instance()->AddSubemitter();
+	}
+}
+
+void ParticleEditor::OnRemoveSubemitterClicked(widget_t *button)
+{
+	UNUSED(button);
+
+	if (Instance()->m_emitterResource != nullptr) {
+
+		uint32_t index =
+			(uint32_t)(intptr_t)dropdown_get_selected_option_data(Instance()->m_dropdownSubemitter);
+
+		Instance()->RemoveSubemitter(index);
+	}
+}
+
+void ParticleEditor::AddToEffectList(emitter_t *emitter)
+{
+	if (emitter != NULL) {
+		arr_push(Instance()->m_effectList, emitter);
 	}
 }
