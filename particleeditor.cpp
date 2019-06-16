@@ -899,14 +899,23 @@ void ParticleEditor::OnEmitShapeSelected(widget_t *dropdown, const char *option,
 
 		case SHAPE_CIRCLE:
 		case SHAPE_SPHERE:
+			widget_set_text(Instance()->m_inputEmitCircleRadius, "%.1f", 0);
 			widget_set_visible(Instance()->m_emitCircleContainer, true);
 			break;
 
 		case SHAPE_BOX:
+			widget_set_text(Instance()->m_inputEmitBoxExtents[0], "%.1f", 0);
+			widget_set_text(Instance()->m_inputEmitBoxExtents[1], "%.1f", 0);
+			widget_set_text(Instance()->m_inputEmitBoxExtents[2], "%.1f", 0);
+
 			widget_set_visible(Instance()->m_emitBoxContainer, true);
 			break;
 
 		case SHAPE_CONE:
+			widget_set_text(Instance()->m_inputEmitConeAngle, "%.1f", 0);
+			widget_set_text(Instance()->m_inputEmitConeRadius, "%.1f", 0);
+			widget_set_text(Instance()->m_inputEmitConeVolume, "%.1f", 0);
+
 			widget_set_visible(Instance()->m_emitConeContainer, true);
 			break;
 	}
