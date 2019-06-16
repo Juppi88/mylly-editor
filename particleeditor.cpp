@@ -27,6 +27,7 @@ ParticleEditor::ParticleEditor(Editor *editor) :
 
 ParticleEditor::~ParticleEditor(void)
 {
+	arr_clear(m_effectList);
 }
 
 void ParticleEditor::Create(void)
@@ -567,13 +568,28 @@ void ParticleEditor::CopyValuesFromEmitter(void)
 	widget_set_text(m_inputEmitPosition[1], "%.1f", m_emitterResource->shape.position.y);
 	widget_set_text(m_inputEmitPosition[2], "%.1f", m_emitterResource->shape.position.z);
 
-	widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitterResource->shape.circle.radius);
-	widget_set_text(m_inputEmitBoxExtents[0], "%.1f", m_emitterResource->shape.box.extents.x);
-	widget_set_text(m_inputEmitBoxExtents[1], "%.1f", m_emitterResource->shape.box.extents.y);
-	widget_set_text(m_inputEmitBoxExtents[2], "%.1f", m_emitterResource->shape.box.extents.z);
-	widget_set_text(m_inputEmitConeAngle, "%.1f", m_emitterResource->shape.cone.angle);
-	widget_set_text(m_inputEmitConeRadius, "%.1f", m_emitterResource->shape.cone.radius);
-	widget_set_text(m_inputEmitConeVolume, "%.1f", m_emitterResource->shape.cone.emit_volume);
+	switch (m_emitterResource->shape.type) {
+
+		case SHAPE_CIRCLE:
+			widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitterResource->shape.circle.radius);
+			break;
+
+		case SHAPE_SPHERE:
+			widget_set_text(m_inputEmitCircleRadius, "%.1f", m_emitterResource->shape.sphere.radius);
+			break;
+
+		case SHAPE_BOX:
+			widget_set_text(m_inputEmitBoxExtents[0], "%.1f", m_emitterResource->shape.box.extents.x);
+			widget_set_text(m_inputEmitBoxExtents[1], "%.1f", m_emitterResource->shape.box.extents.y);
+			widget_set_text(m_inputEmitBoxExtents[2], "%.1f", m_emitterResource->shape.box.extents.z);
+			break;
+
+		case SHAPE_CONE:
+			widget_set_text(m_inputEmitConeAngle, "%.1f", m_emitterResource->shape.cone.angle);
+			widget_set_text(m_inputEmitConeRadius, "%.1f", m_emitterResource->shape.cone.radius);
+			widget_set_text(m_inputEmitConeVolume, "%.1f", m_emitterResource->shape.cone.emit_volume);
+			break;
+	}
 
 	// Refresh the subemitter list.
 	RefreshSubemitterList(0);
