@@ -18,7 +18,7 @@ public:
 	virtual void OnSceneUnload(void) override;
 
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<ParticleEditor>;
 	ParticleEditor(Editor *editor);
 
 	widget_t *AddWidgetRow(widget_t *widget, int16_t height = 25, int16_t padding = 0);

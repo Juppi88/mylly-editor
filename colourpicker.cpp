@@ -20,8 +20,8 @@ void ColourPicker::Create(void)
 {
 	// Window panel and close button.
 	widget_t *closeButton;
-	widget_t *panel = GetEditor()->CreateWindow(vec2i(400, 250), vec2i(500, 400),
-	                                            &m_title, &closeButton);
+	widget_t *panel = GetEditor()->CreateWindowPanel(vec2i(400, 250), vec2i(500, 400),
+	                                                 &m_title, &closeButton);
 
 	button_set_clicked_handler(closeButton, OnClickClose);
 

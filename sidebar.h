@@ -14,6 +14,6 @@ public:
 	virtual void Process(void) override;
 
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<SideBar>;
 	SideBar(Editor *editor);
 };

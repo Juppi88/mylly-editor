@@ -17,7 +17,7 @@ public:
 	void AddButton(const char *text, OnClickButton_t callback, void *context = nullptr);
 
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<MenuBar>;
 	MenuBar(Editor *editor);
 
 private:

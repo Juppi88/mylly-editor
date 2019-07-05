@@ -17,7 +17,7 @@ public:
 	void SetSpriteSheet(texture_t *spriteSheet);
 	
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<SpriteEditor>;
 	SpriteEditor(Editor *editor);
 
 	void UpdateView(void);

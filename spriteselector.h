@@ -17,7 +17,7 @@ public:
 	void AddOption(sprite_t *icon, void *context);
 	
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<SpriteSelector>;
 	SpriteSelector(Editor *editor);
 
 	void CreateEditorWindow(void);

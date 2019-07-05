@@ -12,9 +12,19 @@ cmake_minimum_required(VERSION 3.0)
 project(MyllyEditor VERSION 0.0.1 LANGUAGES CXX)
 
 # Define compiler flags.
-set(CMAKE_CXX_FLAGS         "-Wall -Wextra -std=c++11 -DCGLM_ALL_UNALIGNED")
-set(CMAKE_CXX_FLAGS_DEBUG   "-g -D_DEBUG -DDEBUG")
+set(CMAKE_CXX_FLAGS         "-std=c++11 -DCGLM_ALL_UNALIGNED")
+set(CMAKE_CXX_FLAGS_DEBUG   "-D_DEBUG -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O4 -DNDEBUG")
+
+# Additional flags for GCC/clang.
+if (UNIX)
+	set(CMAKE_CXX_FLAGS       "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+endif ()
+
+if (MSVC)
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi")
+endif ()
 
 # Add the CMake script for the engine library.
 #add_subdirectory("../mylly/mylly" "mylly")

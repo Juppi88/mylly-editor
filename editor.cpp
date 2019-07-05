@@ -149,8 +149,9 @@ widget_t *Editor::CreatePanel(widget_t *parent,
 	return panel;
 }
 
-widget_t *Editor::CreateWindow(const vec2i_t &position, const vec2i_t &size,
-                               widget_t **outTitle, widget_t **outCloseButton)
+widget_t *Editor::CreateWindowPanel(const vec2i_t &position, const vec2i_t &size,
+                                    widget_t **outTitle,
+	                                widget_t **outCloseButton)
 {
 	widget_t *panel = panel_create(nullptr);
 	widget_set_sprite(panel, res_get_sprite("ui-white/button01"));

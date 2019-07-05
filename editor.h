@@ -47,8 +47,9 @@ public:
 	                      anchor_type_t top_type = ANCHOR_MIN, int16_t top_offset = 0,
 	                      anchor_type_t bottom_type = ANCHOR_MAX, int16_t bottom_offset = 0);
 	
-	widget_t *CreateWindow(const vec2i_t &position, const vec2i_t &size,
-	                       widget_t **outTitle = nullptr, widget_t **outCloseButton = nullptr);
+	widget_t *CreateWindowPanel(const vec2i_t &position, const vec2i_t &size,
+	                            widget_t **outTitle = nullptr,
+	                            widget_t **outCloseButton = nullptr);
 
 	widget_t *CreateButton(widget_t *parent, const char *text,
 	                       anchor_type_t left_type = ANCHOR_MIN, int16_t left_offset = 0,

@@ -30,7 +30,7 @@ void SpriteEditor::Create(void)
 {
 	// Window panel and close button.
 	widget_t *closeButton;
-	widget_t *panel = GetEditor()->CreateWindow(vec2i(550, 250), vec2i(1600, 1000),
+	widget_t *panel = GetEditor()->CreateWindowPanel(vec2i(550, 250), vec2i(1600, 1000),
 		nullptr, &closeButton);
 
 	SetPanel(panel);

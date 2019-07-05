@@ -19,7 +19,7 @@ public:
 	                  OnColourSelected_t callback, void *context = nullptr);
 
 private:
-	friend class EditorWindow;
+	friend class EditorWindow<ColourPicker>;
 	ColourPicker(Editor *editor);
 
 	void SetColour(const colour_t &colour);
