@@ -249,7 +249,7 @@ void ParticleEditor::Create(void)
 	dropdown_set_selected_handler(m_dropdownSubemitterType, OnSubemitterTypeSelected);
 
 	// Hide the editor until needed.
-	//SetVisible(false);
+	SetVisible(false);
 
 	// Add a menu bar button to open the particle editor view.
 	GetEditor()->GetMenuBar()->AddButton("Particle Editor", OnMenuOpenClicked);

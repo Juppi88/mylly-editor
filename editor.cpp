@@ -49,7 +49,13 @@ void Editor::Create(void)
 
 	m_spriteEditor->SetSpriteSheet(res_get_texture("ui-white"));
 
-	SetVisible(true);
+	// Display particle editor by default.
+	m_particleEditor->SetVisible(true);
+
+	// Display the cursor until the editor window is hidden.
+	input_toggle_cursor(true);
+
+	SetVisible(false);
 }
 
 void Editor::Process(void)
@@ -89,6 +95,7 @@ void Editor::SetVisible(bool isVisible)
 	m_menuBar->SetVisible(isVisible);
 	m_sideBar->SetVisible(isVisible);
 
+	input_toggle_cursor(isVisible);
 	if (!isVisible) {
 
 		// Hide all floating windows.
