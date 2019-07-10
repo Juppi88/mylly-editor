@@ -1,0 +1,7 @@
+Textures/Sprites:
+UI pack: https://opengameart.org/content/ui-pack
+
+Fonts:
+Louis George Café: https://www.dafont.com/louis-george-caf.font
+Connection II: https://www.dafont.com/connection-ii.font
+SGK075: https://www.dafont.com/sgk075.font

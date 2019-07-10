@@ -682,11 +682,6 @@ void ParticleEditor::ApplyValuesToEmitter(void)
 	}
 
 	emitter_set_emit_shape(m_emitterResource, shape);
-
-	// TODO: Make it possible to change the sprite and emit shape from the editor.
-	//emitter_set_particle_sprite(m_emitter, res_get_sprite("shipicons/red"));
-	//emitter_set_particle_sprite(m_emitter, res_get_sprite("0027"));
-	//emitter_set_emit_shape(m_emitter, SHAPE_POINT, shape_point(vec3(0, -3, 0)));
 }
 
 void ParticleEditor::SaveEmitterToFile(void)
